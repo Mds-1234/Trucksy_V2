@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Route } from "../models/Route.js";
 
-test("route - defaults endDate to date when not provided", async () => {
+test("route - rejects missing endDate", async () => {
   const route = new Route({
     from: "Delhi",
     to: "Jaipur",
@@ -12,8 +12,14 @@ test("route - defaults endDate to date when not provided", async () => {
     driver: "507f1f77bcf86cd799439011"
   });
 
-  await route.validate();
-  assert.equal(route.endDate, "2026-11-20");
+  let error;
+  try {
+    await route.validate();
+  } catch (err) {
+    error = err;
+  }
+  assert.ok(error);
+  assert.match(error.message, /Trip end date is required/);
 });
 
 test("route - rejects endDate earlier than departure date", async () => {

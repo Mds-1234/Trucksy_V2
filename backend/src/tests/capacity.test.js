@@ -53,6 +53,7 @@ test("capacity - atomic findOneAndUpdate race condition integration test", async
     to: "Mumbai",
     stops: ["Jaipur"],
     date: "2026-12-01",
+    endDate: "2026-12-02",
     capacity: 500,
     space: 5
   });

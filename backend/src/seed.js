@@ -47,6 +47,7 @@ const seed = async () => {
     });
 
     const targetDate = "2026-11-15";
+    const targetEndDate = "2026-11-16";
 
     await Route.create({
       driver: driver1._id,
@@ -54,7 +55,7 @@ const seed = async () => {
       to: "Jaipur",
       stops: ["Gurgaon", "Kotputli"],
       date: targetDate,
-      endDate: targetDate,
+      endDate: targetEndDate,
       capacity: 1000,
       space: 10,
       status: "open"
@@ -66,7 +67,7 @@ const seed = async () => {
       to: "Pune",
       stops: ["Navi Mumbai", "Lonavala"],
       date: targetDate,
-      endDate: targetDate,
+      endDate: targetEndDate,
       capacity: 2500,
       space: 25,
       status: "open"

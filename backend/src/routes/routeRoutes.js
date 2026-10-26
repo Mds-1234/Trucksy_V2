@@ -27,14 +27,14 @@ router.post("/", requireRole("driver"), async (req, res, next) => {
 
     const { from, to, stops, date, endDate, capacity, space } = req.body;
 
-    if (!from || !to || !date || capacity === undefined || space === undefined) {
+    if (!from || !to || !date || !endDate || capacity === undefined || space === undefined) {
       return res.status(400).json({
         message: "All fields are required",
         error: { message: "All fields are required" }
       });
     }
 
-    if (endDate && endDate < date) {
+    if (endDate < date) {
       return res.status(400).json({
         message: "Trip end date cannot be earlier than start date",
         error: { message: "Trip end date cannot be earlier than start date" }
