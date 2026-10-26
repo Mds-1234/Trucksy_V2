@@ -1,40 +1,36 @@
-import { db } from "./firebase";
-import { addDoc, collection, getDocs, doc, updateDoc, query, where, setDoc } from "firebase/firestore";
+import api from "./api";
 
-export const createBooking = async (data) => {
-  const hasUniqueFields = data?.routeId && data?.shipmentId && data?.businessUid;
-  if (!hasUniqueFields) {
-    await addDoc(collection(db, "bookings"), data);
-    return;
-  }
-
-  const bookingId = `${data.routeId}_${data.shipmentId}_${data.businessUid}`;
-  await setDoc(doc(db, "bookings", bookingId), data, { merge: true });
+export const createBooking = async (routeId, shipmentId) => {
+  const res = await api.post("/bookings", { routeId, shipmentId });
+  return res.data;
 };
 
-export const getBookings = async () => {
-  const snapshot = await getDocs(collection(db, "bookings"));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+export const getUserBookings = async () => {
+  const res = await api.get("/bookings/mine");
+  return res.data;
 };
 
-export const getUserBookings = async (uid, role) => {
-  const field = role === "driver" ? "driverUid" : "businessUid";
-  const q = query(collection(db, "bookings"), where(field, "==", uid));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+export const acceptBooking = async (id) => {
+  const res = await api.patch(`/bookings/${id}/accept`);
+  return res.data;
 };
 
-export const updateBookingStatus = async (id, status) => {
-  const bookingRef = doc(db, "bookings", id);
-  await updateDoc(bookingRef, { status });
+export const rejectBooking = async (id) => {
+  const res = await api.patch(`/bookings/${id}/reject`);
+  return res.data;
 };
 
-export const updateBookingStops = async (id, completedStops) => {
-  const bookingRef = doc(db, "bookings", id);
-  await updateDoc(bookingRef, { completedStops });
+export const cancelBooking = async (id) => {
+  const res = await api.patch(`/bookings/${id}/cancel`);
+  return res.data;
 };
 
-export const updateBookingDeliveryReached = async (id, deliveryReached) => {
-  const bookingRef = doc(db, "bookings", id);
-  await updateDoc(bookingRef, { deliveryReached });
+export const getMatches = async () => {
+  const res = await api.get("/matches");
+  return res.data;
+};
+
+export const getMatchSummary = async () => {
+  const res = await api.get("/matches/summary");
+  return res.data;
 };

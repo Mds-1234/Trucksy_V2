@@ -25,12 +25,20 @@ const Signup = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       await signupUser(form.email, form.password, form.role, form.name, form.contact);
       navigate("/dashboard");
     } catch (err) {
-      console.error(err);
-      setError(`Failed to create account: ${err.message}`);
+      const serverMessage = err.response?.data?.error?.message;
+      const details = err.response?.data?.error?.details;
+      let errorText = serverMessage || "Failed to create account";
+      if (Array.isArray(details)) {
+        errorText = details.map((d) => `${d.field ? d.field + ": " : ""}${d.message}`).join(", ");
+      } else if (typeof details === "string") {
+        errorText = `${serverMessage}: ${details}`;
+      }
+      setError(errorText);
     } finally {
       setLoading(false);
     }
@@ -41,57 +49,58 @@ const Signup = () => {
       <div className="auth-card">
         <h2>Create Account</h2>
         <p className="auth-subtitle">Join Trucksy to get started</p>
-        
+
         {error && <div className="alert alert-error">{error}</div>}
-        
+
         <form onSubmit={handleSignup} className="auth-form">
           <div className="form-group">
             <label>Full Name</label>
-            <input 
+            <input
               type="text"
-              placeholder="John Doe" 
+              placeholder="John Doe"
               required
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })} 
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </div>
 
           <div className="form-group">
             <label>Contact Number</label>
-            <input 
+            <input
               type="tel"
-              placeholder="+1 234 567 8900" 
+              placeholder="+1 234 567 8900"
               required
               value={form.contact}
-              onChange={(e) => setForm({ ...form, contact: e.target.value })} 
+              onChange={(e) => setForm({ ...form, contact: e.target.value })}
             />
           </div>
 
           <div className="form-group">
             <label>Email Address</label>
-            <input 
+            <input
               type="email"
-              placeholder="you@example.com" 
+              placeholder="you@example.com"
               required
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })} 
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
-          
+
           <div className="form-group">
-            <label>Password</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
+            <label>Password (min 8 characters)</label>
+            <input
+              type="password"
+              placeholder="••••••••"
               required
+              minLength={8}
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })} 
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
-          
+
           <div className="form-group">
             <label>I am a...</label>
-            <select 
+            <select
               className="form-select"
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -100,12 +109,12 @@ const Signup = () => {
               <option value="business">Business</option>
             </select>
           </div>
-          
+
           <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-            {loading ? "Signing up..." : "Sign Up"}
+            {loading ? "Creating Account..." : "Sign Up"}
           </button>
         </form>
-        
+
         <p className="auth-switch">
           Already have an account? <Link to="/login">Log in</Link>
         </p>

@@ -1,21 +1,26 @@
-import { db } from "./firebase";
-import { addDoc, collection, getDocs, query, where, deleteDoc, doc } from "firebase/firestore";
+import api from "./api";
 
-export const addRoute = async (route) => {
-  await addDoc(collection(db, "routes"), route);
+export const addRoute = async (routeData) => {
+  const res = await api.post("/routes", routeData);
+  return res.data;
 };
 
-export const getRoutes = async () => {
-  const snapshot = await getDocs(collection(db, "routes"));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-export const getUserRoutes = async (uid) => {
-  const q = query(collection(db, "routes"), where("uid", "==", uid));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+export const getUserRoutes = async () => {
+  const res = await api.get("/routes/mine");
+  return res.data;
 };
 
 export const deleteRoute = async (id) => {
-  await deleteDoc(doc(db, "routes", id));
+  const res = await api.delete(`/routes/${id}`);
+  return res.data;
+};
+
+export const completeRouteStop = async (routeId, index) => {
+  const res = await api.post(`/routes/${routeId}/stops/${index}/complete`);
+  return res.data;
+};
+
+export const completeRoute = async (routeId) => {
+  const res = await api.post(`/routes/${routeId}/complete`);
+  return res.data;
 };

@@ -20,12 +20,14 @@ const Login = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
       await loginUser(email, password);
       navigate("/dashboard");
     } catch (err) {
-      console.error(err);
-      setError(`Failed to log in: ${err.message}`);
+      const serverMsg = err.response?.data?.error?.message;
+      const details = err.response?.data?.error?.details;
+      setError(details ? `${serverMsg}: ${details}` : serverMsg || "Failed to log in");
     } finally {
       setLoading(false);
     }
@@ -36,37 +38,37 @@ const Login = () => {
       <div className="auth-card">
         <h2>Welcome Back</h2>
         <p className="auth-subtitle">Log in to your Trucksy account</p>
-        
+
         {error && <div className="alert alert-error">{error}</div>}
-        
+
         <form onSubmit={handleLogin} className="auth-form">
           <div className="form-group">
             <label>Email Address</label>
-            <input 
+            <input
               type="email"
-              placeholder="you@example.com" 
+              placeholder="you@example.com"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)} 
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          
+
           <div className="form-group">
             <label>Password</label>
-            <input 
-              placeholder="••••••••" 
+            <input
+              placeholder="••••••••"
               type="password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)} 
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          
+
           <button type="submit" className="btn btn-primary w-100" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-        
+
         <p className="auth-switch">
           Don't have an account? <Link to="/signup">Sign up</Link>
         </p>

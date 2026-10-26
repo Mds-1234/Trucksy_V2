@@ -1,82 +1,71 @@
 import { createContext, useState, useEffect } from "react";
-import { auth, db } from "../services/firebase";
-import { 
-  onAuthStateChanged, 
-  signOut, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
-} from "firebase/auth";
-import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import api from "../services/api";
 
 export const AuthContext = createContext();
-
-const withTimeout = (promise, ms) => {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore request timed out. Make sure you clicked 'Create Database' in Firebase Console!")), ms))
-  ]);
-};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchRoleAndSetUser = async (u) => {
-    try {
-      const q = query(collection(db, "users"), where("uid", "==", u.uid));
-      const querySnapshot = await withTimeout(getDocs(q), 5000);
-      let role = "driver";
-      let name = "";
-      let contact = "";
-      
-      if (!querySnapshot.empty) {
-        const data = querySnapshot.docs[0].data();
-        role = data.role || "driver";
-        name = data.name || "";
-        contact = data.contact || "";
-      }
-      setUser({ ...u, role, name, contact });
-    } catch (error) {
-      console.error("Failed to fetch user data", error);
-      setUser({ ...u, role: "driver", name: "", contact: "" });
-    }
-  };
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        if (!user || user.uid !== u.uid) {
-          await fetchRoleAndSetUser(u);
+    let isMounted = true;
+    const restoreSession = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        if (isMounted) {
+          setUser(null);
+          setLoading(false);
         }
-      } else {
-        setUser(null);
+        return;
       }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [user]);
+
+      try {
+        const res = await api.get("/auth/me");
+        if (isMounted) {
+          setUser(res.data);
+        }
+      } catch {
+        localStorage.removeItem("token");
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    restoreSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const loginUser = async (email, password) => {
-    const res = await signInWithEmailAndPassword(auth, email, password);
-    await fetchRoleAndSetUser(res.user);
+    const res = await api.post("/auth/login", { email, password });
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user);
+    return res.data;
   };
 
   const signupUser = async (email, password, role, name, contact) => {
-    const res = await createUserWithEmailAndPassword(auth, email, password);
-    try {
-      await withTimeout(addDoc(collection(db, "users"), {
-        uid: res.user.uid,
-        role: role,
-        name: name,
-        contact: contact
-      }), 5000);
-    } catch (err) {
-      console.error("Failed to save user data to DB", err);
-    }
-    await fetchRoleAndSetUser(res.user);
+    const res = await api.post("/auth/signup", {
+      email,
+      password,
+      role,
+      name,
+      contact
+    });
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user);
+    return res.data;
   };
 
-  const logout = () => signOut(auth);
+  const logout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, loginUser, signupUser, logout, loading }}>

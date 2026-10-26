@@ -27,15 +27,6 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/services/check.js', 'src/services/cleanup.js'],
-    languageOptions: {
-      globals: globals.node,
-    },
-    rules: {
-      'react-refresh/only-export-components': 'off',
-    },
-  },
-  {
     files: ['src/context/AuthContext.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
