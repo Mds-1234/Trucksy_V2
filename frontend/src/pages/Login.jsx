@@ -25,9 +25,22 @@ const Login = () => {
       await loginUser(email, password);
       navigate("/dashboard");
     } catch (err) {
-      const serverMsg = err.response?.data?.error?.message;
-      const details = err.response?.data?.error?.details;
-      setError(details ? `${serverMsg}: ${details}` : serverMsg || "Failed to log in");
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        err.response?.data?.error ||
+        err.message;
+      const details =
+        err.response?.data?.details ||
+        err.response?.data?.error?.details;
+
+      let errorText = serverMsg || "Failed to log in";
+      if (details && typeof details === "string" && !errorText.includes(details)) {
+        errorText = `${errorText}: ${details}`;
+      } else if (Array.isArray(details)) {
+        errorText = `${errorText}: ${details.map((d) => d.message || d).join(", ")}`;
+      }
+      setError(errorText);
     } finally {
       setLoading(false);
     }

@@ -30,13 +30,20 @@ const Signup = () => {
       await signupUser(form.email, form.password, form.role, form.name, form.contact);
       navigate("/dashboard");
     } catch (err) {
-      const serverMessage = err.response?.data?.error?.message;
-      const details = err.response?.data?.error?.details;
-      let errorText = serverMessage || "Failed to create account";
-      if (Array.isArray(details)) {
-        errorText = details.map((d) => `${d.field ? d.field + ": " : ""}${d.message}`).join(", ");
-      } else if (typeof details === "string") {
-        errorText = `${serverMessage}: ${details}`;
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        err.response?.data?.error ||
+        err.message;
+      const details =
+        err.response?.data?.details ||
+        err.response?.data?.error?.details;
+
+      let errorText = serverMsg || "Failed to create account";
+      if (details && typeof details === "string" && !errorText.includes(details)) {
+        errorText = `${errorText}: ${details}`;
+      } else if (Array.isArray(details)) {
+        errorText = `${errorText}: ${details.map((d) => d.message || d).join(", ")}`;
       }
       setError(errorText);
     } finally {
