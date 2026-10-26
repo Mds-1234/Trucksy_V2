@@ -45,7 +45,11 @@ const Bookings = () => {
 
   useEffect(() => {
     let isMounted = true;
-    const load = async () => {
+    const load = async (isPoll = false) => {
+      if (isPoll && typeof document !== "undefined" && document.hidden) {
+        return;
+      }
+
       try {
         const userBookings = await getUserBookings();
         if (isMounted) {
@@ -69,8 +73,8 @@ const Bookings = () => {
       }
     };
 
-    load();
-    const interval = setInterval(load, 4000);
+    load(false);
+    const interval = setInterval(() => load(true), 20000);
     return () => {
       isMounted = false;
       clearInterval(interval);
