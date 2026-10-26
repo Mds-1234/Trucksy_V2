@@ -20,7 +20,7 @@ Trucksy provides a multi-tenant logistics matching and booking platform engineer
 
 ## Tech Stack
 - **Client**: React 19, Vite, React Router v7, Axios, CSS Modules / Pure CSS.
-- **Server**: Node.js, Express 4, Mongoose 8, JSON Web Tokens (`jsonwebtoken`), `bcryptjs`, `zod`, `helmet`, `cors`, `express-rate-limit`, `dotenv`, `morgan`.
+- **Server**: Node.js, Express 4, Mongoose 8, JSON Web Tokens (`jsonwebtoken`), `bcryptjs`, `cors`, `dotenv`.
 - **Testing**: Node.js built-in test runner (`node:test`, `node:assert`).
 - **Database**: MongoDB (Mongoose ODM).
 

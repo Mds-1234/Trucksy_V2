@@ -2,7 +2,6 @@ import { Router } from "express";
 import { Booking } from "../models/Booking.js";
 import { Route } from "../models/Route.js";
 import { Shipment } from "../models/Shipment.js";
-import { createBookingSchema } from "../schemas/validation.js";
 import { checkRouteShipmentMatch } from "../utils/matching.js";
 import { buildCapacityFilterAndUpdate } from "../utils/capacity.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
@@ -13,11 +12,19 @@ router.use(authenticate);
 
 router.post("/", requireRole("business"), async (req, res, next) => {
   try {
-    const validated = createBookingSchema.parse(req.body);
+    const { routeId, shipmentId } = req.body;
 
-    const shipment = await Shipment.findById(validated.shipmentId);
+    if (!routeId || !shipmentId) {
+      return res.status(400).json({
+        message: "Route and shipment are required",
+        error: { message: "Route and shipment are required" }
+      });
+    }
+
+    const shipment = await Shipment.findById(shipmentId);
     if (!shipment) {
       return res.status(404).json({
+        message: "Shipment not found",
         error: {
           message: "Shipment not found"
         }
@@ -26,6 +33,7 @@ router.post("/", requireRole("business"), async (req, res, next) => {
 
     if (shipment.business.toString() !== req.user.id) {
       return res.status(403).json({
+        message: "Forbidden",
         error: {
           message: "Forbidden",
           details: "You do not own this shipment"
@@ -35,6 +43,7 @@ router.post("/", requireRole("business"), async (req, res, next) => {
 
     if (shipment.status !== "open") {
       return res.status(409).json({
+        message: "Shipment is not open for booking",
         error: {
           message: "Shipment is not open for booking",
           details: `Current shipment status is ${shipment.status}`
@@ -42,9 +51,10 @@ router.post("/", requireRole("business"), async (req, res, next) => {
       });
     }
 
-    const route = await Route.findById(validated.routeId);
+    const route = await Route.findById(routeId);
     if (!route) {
       return res.status(404).json({
+        message: "Route not found",
         error: {
           message: "Route not found"
         }
@@ -53,6 +63,7 @@ router.post("/", requireRole("business"), async (req, res, next) => {
 
     if (route.status !== "open") {
       return res.status(409).json({
+        message: "Route is not open for booking",
         error: {
           message: "Route is not open for booking",
           details: `Current route status is ${route.status}`
@@ -68,6 +79,7 @@ router.post("/", requireRole("business"), async (req, res, next) => {
 
     if (existingBooking) {
       return res.status(409).json({
+        message: "Booking already exists",
         error: {
           message: "Booking already exists",
           details: "A booking request for this route and shipment is already active"
@@ -78,6 +90,7 @@ router.post("/", requireRole("business"), async (req, res, next) => {
     const matchResult = checkRouteShipmentMatch(route, shipment);
     if (!matchResult.isMatch) {
       return res.status(409).json({
+        message: "Shipment does not match route criteria",
         error: {
           message: "Shipment does not match route criteria",
           details: matchResult.reason
@@ -134,6 +147,7 @@ router.patch("/:id/accept", requireRole("driver"), async (req, res, next) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({
+        message: "Booking not found",
         error: {
           message: "Booking not found"
         }
@@ -142,6 +156,7 @@ router.patch("/:id/accept", requireRole("driver"), async (req, res, next) => {
 
     if (booking.driver.toString() !== req.user.id) {
       return res.status(403).json({
+        message: "Forbidden",
         error: {
           message: "Forbidden",
           details: "You do not own the route for this booking"
@@ -151,6 +166,7 @@ router.patch("/:id/accept", requireRole("driver"), async (req, res, next) => {
 
     if (booking.status !== "pending") {
       return res.status(409).json({
+        message: "Illegal transition",
         error: {
           message: "Illegal transition",
           details: `Cannot accept booking with status ${booking.status}`
@@ -172,6 +188,7 @@ router.patch("/:id/accept", requireRole("driver"), async (req, res, next) => {
       await booking.save();
 
       return res.status(409).json({
+        message: "Insufficient capacity on route segments",
         error: {
           message: "Insufficient capacity on route segments",
           details: "The booking was rejected because required segment capacity is no longer available"
@@ -204,6 +221,7 @@ router.patch("/:id/reject", requireRole("driver"), async (req, res, next) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({
+        message: "Booking not found",
         error: {
           message: "Booking not found"
         }
@@ -212,6 +230,7 @@ router.patch("/:id/reject", requireRole("driver"), async (req, res, next) => {
 
     if (booking.driver.toString() !== req.user.id) {
       return res.status(403).json({
+        message: "Forbidden",
         error: {
           message: "Forbidden",
           details: "You do not own the route for this booking"
@@ -221,6 +240,7 @@ router.patch("/:id/reject", requireRole("driver"), async (req, res, next) => {
 
     if (booking.status !== "pending") {
       return res.status(409).json({
+        message: "Illegal transition",
         error: {
           message: "Illegal transition",
           details: `Cannot reject booking with status ${booking.status}`
@@ -245,6 +265,7 @@ router.patch("/:id/cancel", requireRole("business"), async (req, res, next) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({
+        message: "Booking not found",
         error: {
           message: "Booking not found"
         }
@@ -253,6 +274,7 @@ router.patch("/:id/cancel", requireRole("business"), async (req, res, next) => {
 
     if (booking.business.toString() !== req.user.id) {
       return res.status(403).json({
+        message: "Forbidden",
         error: {
           message: "Forbidden",
           details: "You do not own this booking"
@@ -262,6 +284,7 @@ router.patch("/:id/cancel", requireRole("business"), async (req, res, next) => {
 
     if (booking.status !== "pending") {
       return res.status(409).json({
+        message: "Illegal transition",
         error: {
           message: "Illegal transition",
           details: `Cannot cancel booking with status ${booking.status}`

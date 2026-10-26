@@ -4,7 +4,7 @@
 Trucksy has been re-architected from a client-heavy React + Firebase application into a pure MERN (MongoDB, Express, React, Node.js) production-grade system.
 - **Client (Frontend)**: React 19 with Vite, React Router v7, and Axios. The frontend acts solely as a presentation and interaction layer. It maintains JWT authentication state in `localStorage` and communicates via REST API endpoints with the Express server.
 - **Server (Backend)**: Node.js and Express server with Mongoose ODM connected to MongoDB. All business rules, route-shipment matching, capacity reservation, authorization checks, and booking state transitions are handled exclusively on the server.
-- **Security & Middleware**: Protected with Helmet headers, CORS limited to client domain, request body size limits (100kb), rate limiting on authentication routes, and central error handling with Zod schema validation.
+- **Security & Middleware**: Protected with CORS limited to client domain, JSON body parsing, and simple centralized error handling without unnecessary overhead, referencing the clean patterns in ShopKart.
 - **Atomic Concurrency**: Route capacity reservations are guaranteed atomic via single-operation MongoDB queries (`findOneAndUpdate` with `$inc`), eliminating overbooking race conditions.
 
 ---
@@ -23,15 +23,8 @@ Trucksy has been re-architected from a client-heavy React + Firebase application
 - `backend/src/utils/token.js`: JSON Web Token generation and verification helper.
 - `backend/src/utils/capacity.js`: Pure helpers for atomic route filter generation and segment capacity decrement calculations.
 - `backend/src/utils/matching.js`: Pure server-side matching engine and match counter for dashboard summaries.
-- `backend/src/schemas/validation.js`: Zod validation schemas for auth, routes, shipments, and bookings.
-- `backend/src/middleware/auth.js`: JWT authentication verification and role-based authorization guard middleware.
-- `backend/src/middleware/errorHandler.js`: Central error handler mapping Zod, Mongoose, CastError, duplicate keys (409), and 500 status codes.
-- `backend/src/routes/authRoutes.js`: Auth endpoints for user signup, login, and profile retrieval.
-- `backend/src/routes/routeRoutes.js`: Route creation, driver route listing, route deletion, stop completion, and route completion endpoints.
-- `backend/src/routes/shipmentRoutes.js`: Shipment creation, business shipment listing, and shipment deletion endpoints.
-- `backend/src/routes/matchRoutes.js`: Server-side route matching endpoints for businesses and dashboard match summary counts for drivers.
-- `backend/src/routes/bookingRoutes.js`: Booking creation, user booking retrieval, atomic booking acceptance, rejection, and cancellation endpoints.
-- `backend/src/app.js`: Express application configuration with Helmet, CORS, Morgan, JSON parsing, rate limiting, and route mounting.
+- `backend/src/middleware/errorHandler.js`: Central error handler mapping Mongoose validation, CastError, duplicate keys (409), and 500 status codes.
+- `backend/src/app.js`: Express application configuration with CORS, JSON parsing, and route mounting.
 - `backend/src/index.js`: Server entrypoint initiating database connection and starting HTTP listener.
 - `backend/src/seed.js`: Database seeding script creating 2 drivers, 2 businesses, sample routes, and race-condition shipment pairs.
 - `backend/src/tests/matching.test.js`: Built-in Node test suite verifying pure matching rules, path ordering, date matching, and edge cases.
@@ -77,7 +70,7 @@ Trucksy has been re-architected from a client-heavy React + Firebase application
 - `frontend/src/pages/MyRoutes.jsx`: Updated to consume `GET /api/routes/mine`; added route status indicator and a Delete button with server 409 conflict handling.
 - `frontend/src/pages/MyShipments.jsx`: Updated to consume `GET /api/shipments/mine`; added shipment status indicator and a Delete button with server 409 conflict handling.
 - `frontend/src/pages/Login.jsx`: Updated to use backend auth service with clear server error messages.
-- `frontend/src/pages/Signup.jsx`: Updated to submit user details to backend `/api/auth/signup` and render Zod server validation error details.
+- `frontend/src/pages/Signup.jsx`: Updated to submit user details to backend `/api/auth/signup` and render server validation error messages.
 - `frontend/src/routes/ProtectedRoute.jsx`: Enhanced with optional `role` check to restrict access by user role (`driver` or `business`).
 - `.gitignore`: Updated at repository root to ignore `node_modules`, `.env`, `dist`, and `logs`.
 
@@ -153,12 +146,8 @@ All API endpoints are prefixed with `/api` and require a `Bearer <token>` in the
   - `mongoose` (`^8.9.5`): MongoDB object modeling.
   - `jsonwebtoken` (`^9.0.2`): JWT creation and verification.
   - `bcryptjs` (`^2.4.3`): Secure password hashing.
-  - `zod` (`^3.24.1`): Type and schema validation.
-  - `helmet` (`^8.0.0`): HTTP security headers.
   - `cors` (`^2.8.5`): Cross-Origin Resource Sharing control.
-  - `express-rate-limit` (`^7.5.0`): Brute-force and rate limit protection on auth routes.
   - `dotenv` (`^16.4.7`): Environment variable management.
-  - `morgan` (`^1.10.0`): HTTP request logging.
 
 ---
 

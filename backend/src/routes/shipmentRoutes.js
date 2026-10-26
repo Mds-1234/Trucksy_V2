@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { Shipment } from "../models/Shipment.js";
 import { Booking } from "../models/Booking.js";
-import { createShipmentSchema } from "../schemas/validation.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 
 const router = Router();
@@ -10,11 +9,41 @@ router.use(authenticate);
 
 router.post("/", requireRole("business"), async (req, res, next) => {
   try {
-    const validated = createShipmentSchema.parse(req.body);
+    const { from, to, date, weight, space } = req.body;
+
+    if (!from || !to || !date || weight === undefined || space === undefined) {
+      return res.status(400).json({
+        message: "All fields are required",
+        error: { message: "All fields are required" }
+      });
+    }
+
+    const parsedWeight = Number(weight);
+    const parsedSpace = Number(space);
+
+    if (isNaN(parsedWeight) || parsedWeight <= 0) {
+      return res.status(400).json({
+        message: "Weight must be greater than 0",
+        error: { message: "Weight must be greater than 0" }
+      });
+    }
+
+    if (isNaN(parsedSpace) || parsedSpace < 0) {
+      return res.status(400).json({
+        message: "Space must be a non-negative number",
+        error: { message: "Space must be a non-negative number" }
+      });
+    }
+
     const shipment = await Shipment.create({
-      ...validated,
+      from: from.trim(),
+      to: to.trim(),
+      date,
+      weight: parsedWeight,
+      space: parsedSpace,
       business: req.user.id
     });
+
     return res.status(201).json(shipment);
   } catch (err) {
     next(err);
@@ -35,6 +64,7 @@ router.delete("/:id", requireRole("business"), async (req, res, next) => {
     const shipment = await Shipment.findById(req.params.id);
     if (!shipment) {
       return res.status(404).json({
+        message: "Shipment not found",
         error: {
           message: "Shipment not found"
         }
@@ -43,6 +73,7 @@ router.delete("/:id", requireRole("business"), async (req, res, next) => {
 
     if (shipment.business.toString() !== req.user.id) {
       return res.status(403).json({
+        message: "Forbidden",
         error: {
           message: "Forbidden",
           details: "You do not own this shipment"
@@ -57,6 +88,7 @@ router.delete("/:id", requireRole("business"), async (req, res, next) => {
 
     if (activeBooking) {
       return res.status(409).json({
+        message: "Cannot delete shipment with active bookings",
         error: {
           message: "Cannot delete shipment with active bookings",
           details: "There are pending or accepted bookings associated with this shipment. Cancel them first."

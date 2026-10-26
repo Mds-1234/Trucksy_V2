@@ -1,20 +1,7 @@
-import { ZodError } from "zod";
-
 export const errorHandler = (err, req, res, next) => {
-  if (err instanceof ZodError) {
-    return res.status(400).json({
-      error: {
-        message: "Validation error",
-        details: err.errors.map((e) => ({
-          field: e.path.join("."),
-          message: e.message
-        }))
-      }
-    });
-  }
-
   if (err.name === "ValidationError") {
     return res.status(400).json({
+      message: "Validation error",
       error: {
         message: "Validation error",
         details: err.message
@@ -25,6 +12,7 @@ export const errorHandler = (err, req, res, next) => {
   if (err.code === 11000) {
     const fields = Object.keys(err.keyPattern || {}).join(", ") || "field";
     return res.status(409).json({
+      message: "Duplicate entry",
       error: {
         message: "Duplicate entry",
         details: `A record with this ${fields} already exists`
@@ -34,6 +22,7 @@ export const errorHandler = (err, req, res, next) => {
 
   if (err.name === "CastError") {
     return res.status(400).json({
+      message: "Invalid ID format",
       error: {
         message: "Invalid ID format",
         details: `Invalid ${err.path}: ${err.value}`
@@ -41,19 +30,14 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
-  if (err.statusCode || err.status) {
-    const statusCode = err.statusCode || err.status;
-    return res.status(statusCode).json({
-      error: {
-        message: err.message || "Request failed",
-        details: err.details
-      }
-    });
-  }
+  const statusCode = err.statusCode || err.status || 500;
+  const message = statusCode === 500 ? "Internal server error" : (err.message || "Request failed");
 
-  return res.status(500).json({
+  return res.status(statusCode).json({
+    message,
     error: {
-      message: "Internal server error"
+      message,
+      details: err.details
     }
   });
 };
