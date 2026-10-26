@@ -224,6 +224,11 @@ const Bookings = () => {
     [bookings]
   );
 
+  const acceptedBookings = useMemo(
+    () => bookings.filter((b) => b.status === "accepted" && b.route?.status !== "completed"),
+    [bookings]
+  );
+
   const groupedActiveRoutes = useMemo(() => {
     const map = {};
     bookings
@@ -299,7 +304,7 @@ const Bookings = () => {
                     border: "1px solid #2196f3"
                   }}
                 >
-                  Active Bookings ({groupedActiveRoutes.length})
+                  Active Trips ({groupedActiveRoutes.length}) • {acceptedBookings.length} Bookings
                 </button>
               </div>
             )}
@@ -317,7 +322,10 @@ const Bookings = () => {
                     </div>
                     <div className="card-body" style={{ marginTop: "10px" }}>
                       <p><strong>Route:</strong> {match.route.from} ➔ {match.route.to} (Capacity: {match.route.capacity}kg, Space: {match.route.space}m³)</p>
-                      <p><strong>Date:</strong> {match.route.date || "N/A"}</p>
+                      <p><strong>Departure Date:</strong> {match.route.date || "N/A"}</p>
+                      <p style={{ color: "#4caf50", fontWeight: "500" }}>
+                        <strong>Estimated Reach Date:</strong> {match.route.endDate || match.route.date || "N/A"}
+                      </p>
                       {match.route.stops?.length > 0 && <p><strong>Stops:</strong> {match.route.stops.join(" ➔ ")}</p>}
                       <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
                       <p><strong>Shipment:</strong> {match.shipment.from} ➔ {match.shipment.to} (Weight: {match.shipment.weight}kg, Space: {match.shipment.space}m³)</p>
@@ -347,7 +355,10 @@ const Bookings = () => {
                     </div>
                     <div className="card-body" style={{ marginTop: "10px" }}>
                       <p><strong>Route:</strong> {booking.route?.from} ➔ {booking.route?.to} (Space: {booking.route?.space}m³)</p>
-                      <p><strong>Date:</strong> {booking.route?.date || "N/A"}</p>
+                      <p><strong>Departure Date:</strong> {booking.route?.date || "N/A"}</p>
+                      <p style={{ color: "#4caf50", fontWeight: "500" }}>
+                        <strong>Expected Reach Date:</strong> {booking.route?.endDate || booking.route?.date || "N/A"}
+                      </p>
                       {booking.route?.stops?.length > 0 && <p><strong>Stops:</strong> {booking.route.stops.join(" ➔ ")}</p>}
                       <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
                       <p><strong>Shipment:</strong> {booking.shipment?.from} ➔ {booking.shipment?.to} (Weight: {booking.weight}kg, Space: {booking.space}m³)</p>
@@ -395,12 +406,60 @@ const Bookings = () => {
                     </div>
                     <div className="card-body" style={{ marginTop: "10px" }}>
                       <p><strong>Route:</strong> {route.from} ➔ {route.to} (Space: {route.space}m³)</p>
-                      <p><strong>Date:</strong> {route.date || "N/A"}</p>
+                      <p><strong>Departure Date:</strong> {route.date || "N/A"}</p>
+                      <p style={{ color: "#4caf50", fontWeight: "500" }}>
+                        <strong>Trip End Date (Estimated Arrival):</strong> {route.endDate || route.date || "N/A"}
+                      </p>
                       {route.stops?.length > 0 && <p><strong>Stops:</strong> {route.stops.join(" ➔ ")}</p>}
                       <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
                       <p><strong>Trip Segments:</strong> {tripSegments.join(", ")}</p>
                       <p><strong>Businesses:</strong> {businessNames.join(", ")}</p>
-                      <p><strong>Deliveries in this trip:</strong> {group.length}</p>
+                      <p><strong>Total Deliveries on Truck:</strong> {group.length}</p>
+
+                      <div style={{ marginTop: "15px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                        <h4 style={{ marginBottom: "10px", fontSize: "0.95rem", color: "var(--text-primary)" }}>
+                          Active Deliveries in this Trip ({group.length}):
+                        </h4>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                          {group.map((b, bIdx) => (
+                            <div
+                              key={b.id || bIdx}
+                              style={{
+                                background: "rgba(255,255,255,0.04)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                borderRadius: "6px",
+                                padding: "10px 12px"
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                                <strong style={{ color: "var(--text-primary)" }}>
+                                  Delivery #{bIdx + 1}: {b.business?.name || "Business"}
+                                </strong>
+                                <span
+                                  style={{
+                                    fontSize: "0.75rem",
+                                    padding: "2px 8px",
+                                    borderRadius: "4px",
+                                    background: b.deliveryReached ? "rgba(76, 175, 80, 0.2)" : "rgba(33, 150, 243, 0.2)",
+                                    color: b.deliveryReached ? "#4caf50" : "#2196f3"
+                                  }}
+                                >
+                                  {b.deliveryReached ? "DESTINATION REACHED" : "IN TRANSIT"}
+                                </span>
+                              </div>
+                              <p style={{ margin: "3px 0", fontSize: "0.88rem" }}>
+                                <strong>Shipment:</strong> {b.shipment?.from} ➔ {b.shipment?.to}
+                              </p>
+                              <p style={{ margin: "3px 0", fontSize: "0.88rem" }}>
+                                <strong>Load:</strong> {b.weight} kg | {b.space} m³
+                              </p>
+                              <p style={{ margin: "3px 0", fontSize: "0.88rem" }}>
+                                <strong>Contact:</strong> {b.business?.contact || "N/A"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     <div className="card-footer" style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
                       {route.stops?.length > 0 && (
@@ -466,7 +525,10 @@ const Bookings = () => {
                     </div>
                     <div className="card-body" style={{ marginTop: "10px" }}>
                       <p><strong>Route:</strong> {booking.route?.from} ➔ {booking.route?.to} (Space: {booking.route?.space}m³)</p>
-                      <p><strong>Date:</strong> {booking.route?.date || "N/A"}</p>
+                      <p><strong>Departure Date:</strong> {booking.route?.date || "N/A"}</p>
+                      <p style={{ color: "#4caf50", fontWeight: "500" }}>
+                        <strong>Expected Reach Date:</strong> {booking.route?.endDate || booking.route?.date || "N/A"}
+                      </p>
                       {booking.route?.stops?.length > 0 && <p><strong>Stops:</strong> {booking.route.stops.join(" ➔ ")}</p>}
                       <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
                       <p><strong>Shipment:</strong> {booking.shipment?.from} ➔ {booking.shipment?.to} (Weight: {booking.weight}kg, Space: {booking.space}m³)</p>

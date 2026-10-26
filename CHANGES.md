@@ -29,6 +29,7 @@ Trucksy has been re-architected from a client-heavy React + Firebase application
 - `backend/src/seed.js`: Database seeding script creating 2 drivers, 2 businesses, sample routes, and race-condition shipment pairs.
 - `backend/src/tests/matching.test.js`: Built-in Node test suite verifying pure matching rules, path ordering, date matching, and edge cases.
 - `backend/src/tests/capacity.test.js`: Unit and integration test suite verifying atomic capacity reservation and race condition rejection.
+- ackend/src/tests/routes.test.js: Built-in Node test suite verifying Route schema end date defaults, departure date validation, and order constraints.
 
 ### Frontend
 - `frontend/src/services/api.js`: Axios instance configured with base URL, JWT request interceptor, and 401 unauthenticated redirect handling.

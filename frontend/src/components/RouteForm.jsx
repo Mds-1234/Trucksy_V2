@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { addRoute } from "../services/routeService";
 
-const RouteForm = () => {
+const RouteForm = ({ onRouteAdded, disabled, activeTripNotice }) => {
   const [form, setForm] = useState({
     from: "",
     to: "",
     date: "",
+    endDate: "",
     capacity: "",
     space: "",
     stops: []
@@ -15,8 +16,18 @@ const RouteForm = () => {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setForm((prev) => ({
+      ...prev,
+      date: newDate,
+      endDate: !prev.endDate || prev.endDate < newDate ? newDate : prev.endDate
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (disabled) return;
     setSuccess("");
     setError("");
     setLoading(true);
@@ -27,15 +38,19 @@ const RouteForm = () => {
         to: form.to,
         stops: form.stops,
         date: form.date,
+        endDate: form.endDate || form.date,
         capacity: Number(form.capacity),
         space: Number(form.space)
       });
       setSuccess("Route added successfully!");
-      setForm({ from: "", to: "", date: "", capacity: "", space: "", stops: [] });
+      setForm({ from: "", to: "", date: "", endDate: "", capacity: "", space: "", stops: [] });
       setStopInput("");
+      if (onRouteAdded) {
+        onRouteAdded();
+      }
     } catch (err) {
-      const serverMessage = err.response?.data?.error?.message;
-      const details = err.response?.data?.error?.details;
+      const serverMessage = err.response?.data?.message || err.response?.data?.error?.message;
+      const details = err.response?.data?.details || err.response?.data?.error?.details;
       let errorText = serverMessage || "Failed to add route";
       if (Array.isArray(details)) {
         errorText = details.map((d) => `${d.field ? d.field + ": " : ""}${d.message}`).join(", ");
@@ -135,12 +150,25 @@ const RouteForm = () => {
       </div>
 
       <div className="form-group">
-        <label>Trip Date</label>
+        <label>Trip Start Date (Departure)</label>
         <input
           type="date"
           required
+          disabled={disabled}
           value={form.date}
-          onChange={(e) => setForm({ ...form, date: e.target.value })}
+          onChange={handleDateChange}
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Trip End Date (Estimated Arrival)</label>
+        <input
+          type="date"
+          required
+          disabled={disabled}
+          min={form.date || undefined}
+          value={form.endDate}
+          onChange={(e) => setForm({ ...form, endDate: e.target.value })}
         />
       </div>
 
@@ -150,6 +178,7 @@ const RouteForm = () => {
           placeholder="e.g. 5000"
           type="number"
           required
+          disabled={disabled}
           value={form.capacity}
           onChange={(e) => setForm({ ...form, capacity: e.target.value })}
         />
@@ -161,13 +190,20 @@ const RouteForm = () => {
           placeholder="e.g. 25"
           type="number"
           required
+          disabled={disabled}
           value={form.space}
           onChange={(e) => setForm({ ...form, space: e.target.value })}
         />
       </div>
 
-      <button className="btn btn-primary" disabled={loading}>
-        {loading ? "Adding..." : "Add Route"}
+      {disabled && activeTripNotice && (
+        <div className="alert" style={{ backgroundColor: "rgba(255, 152, 0, 0.15)", border: "1px solid #ff9800", color: "var(--text-primary)", marginBottom: "1rem" }}>
+          {activeTripNotice}
+        </div>
+      )}
+
+      <button className="btn btn-primary" disabled={loading || disabled}>
+        {loading ? "Adding..." : disabled ? "Active Trip in Progress" : "Add Route"}
       </button>
     </form>
   );

@@ -10,12 +10,34 @@ router.use(authenticate);
 
 router.post("/", requireRole("driver"), async (req, res, next) => {
   try {
-    const { from, to, stops, date, capacity, space } = req.body;
+    const existingActiveRoute = await Route.findOne({
+      driver: req.user.id,
+      status: { $in: ["open", "in_progress"] }
+    });
+
+    if (existingActiveRoute) {
+      return res.status(409).json({
+        message: "A driver can only do one trip at a time. Please complete your current trip first.",
+        error: {
+          message: "A driver can only do one trip at a time. Please complete your current trip first.",
+          details: `Active trip: ${existingActiveRoute.from} ➔ ${existingActiveRoute.to} (${existingActiveRoute.status})`
+        }
+      });
+    }
+
+    const { from, to, stops, date, endDate, capacity, space } = req.body;
 
     if (!from || !to || !date || capacity === undefined || space === undefined) {
       return res.status(400).json({
         message: "All fields are required",
         error: { message: "All fields are required" }
+      });
+    }
+
+    if (endDate && endDate < date) {
+      return res.status(400).json({
+        message: "Trip end date cannot be earlier than start date",
+        error: { message: "Trip end date cannot be earlier than start date" }
       });
     }
 
@@ -52,6 +74,7 @@ router.post("/", requireRole("driver"), async (req, res, next) => {
       to: to.trim(),
       stops: cleanStops,
       date,
+      endDate: endDate || date,
       capacity: parsedCapacity,
       space: parsedSpace,
       driver: req.user.id

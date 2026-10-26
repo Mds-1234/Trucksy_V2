@@ -47,6 +47,13 @@ const routeSchema = new mongoose.Schema(
       required: true,
       match: /^\d{4}-\d{2}-\d{2}$/
     },
+    endDate: {
+      type: String,
+      match: /^\d{4}-\d{2}-\d{2}$/,
+      default: function () {
+        return this.date;
+      }
+    },
     capacity: {
       type: Number,
       required: true,
@@ -88,6 +95,13 @@ const routeSchema = new mongoose.Schema(
 routeSchema.index({ status: 1, date: 1, pathKeys: 1 });
 
 routeSchema.pre("validate", function (next) {
+  if (!this.endDate && this.date) {
+    this.endDate = this.date;
+  }
+  if (this.endDate && this.date && this.endDate < this.date) {
+    return next(new Error("Trip end date cannot be earlier than start date"));
+  }
+
   const normFrom = normaliseCity(this.from);
   const normTo = normaliseCity(this.to);
 

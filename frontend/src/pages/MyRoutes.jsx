@@ -76,7 +76,8 @@ const MyRoutes = () => {
                 <div className="card-body" style={{ marginTop: "10px" }}>
                   <p><strong>From:</strong> {r.from}</p>
                   <p><strong>To:</strong> {r.to}</p>
-                  <p><strong>Date:</strong> {r.date || "N/A"}</p>
+                  <p><strong>Departure Date:</strong> {r.date || "N/A"}</p>
+                  <p style={{ color: "#4caf50" }}><strong>Trip End Date:</strong> {r.endDate || r.date || "N/A"}</p>
                   {r.stops?.length > 0 && (
                     <p><strong>Stops:</strong> {r.stops.join(" ➔ ")}</p>
                   )}

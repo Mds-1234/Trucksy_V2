@@ -54,6 +54,7 @@ const seed = async () => {
       to: "Jaipur",
       stops: ["Gurgaon", "Kotputli"],
       date: targetDate,
+      endDate: targetDate,
       capacity: 1000,
       space: 10,
       status: "open"
@@ -65,6 +66,7 @@ const seed = async () => {
       to: "Pune",
       stops: ["Navi Mumbai", "Lonavala"],
       date: targetDate,
+      endDate: targetDate,
       capacity: 2500,
       space: 25,
       status: "open"
