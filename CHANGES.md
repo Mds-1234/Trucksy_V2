@@ -166,5 +166,14 @@ All API endpoints are prefixed with `/api` and require a `Bearer <token>` in the
 ---
 
 ## 10. Known Limitations
-- Real-time updates rely on user action refetching rather than WebSockets, per architectural rules prohibiting Socket.IO.
+- Live updates rely on background periodic polling (20-second interval, skipped when tab is hidden) rather than WebSockets, per architectural rules prohibiting Socket.IO. Polling is not real-time.
 - Intermediate stop tracking assumes a linear path order without geographic waypoint rerouting or dynamic GPS coordinate mapping.
+
+
+---
+
+## 11. Workflow and Operational Refinements
+1. **One-Active-Trip Rule**: A driver is strictly permitted to have only one active trip (`open` or `in_progress`) at any given time. Creation of an additional route is rejected by the server with HTTP 409 Conflict. Drivers can delete their own open route if no live bookings exist, which frees them to post a new trip.
+2. **Trip End Date & Estimated Reach Dates**: Every route requires a departure `date` and arrival `endDate` (`endDate >= date`). The Route schema validator rejects missing `endDate` or any `endDate` earlier than `date`. Businesses view the driver's estimated reach date prior to booking and throughout transit.
+3. **Dedicated Active Bookings & Non-Destructive Trip History**: The active Bookings dashboard exclusively displays in-flight records (`pending` and `accepted`). Upon trip completion, bookings transition to `completed` and are removed from the active view, remaining archived in Trip History.
+4. **Background Periodic Polling**: The Bookings view synchronizes via background polling on a 20-second interval (not real-time). Polling requests are skipped when the browser tab is hidden (`document.hidden === true`) and intervals are cleared upon component unmount.

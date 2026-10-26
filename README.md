@@ -13,6 +13,10 @@ Trucksy provides a multi-tenant logistics matching and booking platform engineer
 ## Key Features
 - **Server-Side Spatial & Segment Matching**: Evaluates path topology and calculates available capacity across all intermediary route segments.
 - **Atomic Capacity Reservation**: Employs single-operation MongoDB updates (`findOneAndUpdate` with `$inc`) ensuring two concurrent businesses cannot overbook the last available capacity.
+- **One-Active-Trip Rule**: Enforces that a driver may only have a single active trip (`open` or `in_progress`) at any given time. Creation of another trip is blocked with HTTP 409 until the current trip is completed or deleted (allowed when no live bookings exist).
+- **Route End Dates & Estimated Reach Dates**: Every route strictly requires a departure `date` and an arrival `endDate` (`endDate >= date`). Businesses are presented with the driver's estimated reach date prior to booking and throughout active shipment transit.
+- **Dedicated Active Bookings vs. Trip History**: The active Bookings interface only renders in-flight (`pending` and `accepted`) bookings. When a driver completes a trip, accepted bookings automatically transition to `completed` and are removed from the active view into permanent Trip History.
+- **Background Polling Synchronization**: The Bookings interface synchronizes status via periodic polling on a 20-second interval (not real-time sockets). Polling is skipped whenever the browser tab is hidden (`document.hidden === true`) and cleanly cancelled on unmount.
 - **Strict Role-Based Security**: Restricts access and capabilities across drivers and businesses using JWT authentication, role guards, and resource ownership checks.
 - **Sequential Route Execution**: Drivers progress through intermediate stops in strict order, automatically updating destination milestone indicators for relevant shippers.
 - **Non-Destructive Lifecycle Tracking**: Full historical records for trips and shipments are preserved with comprehensive audit details.
@@ -55,6 +59,31 @@ stateDiagram-v2
     cancelled --> [*]
     completed --> [*]
 ```
+
+### API Reference
+All endpoints require a valid `Bearer <JWT>` header, except signup and login. Identity and role are derived exclusively from the token.
+
+| Method | Endpoint | Role | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/signup` | Public | Registers a new driver or business account |
+| `POST` | `/api/auth/login` | Public | Authenticates credentials and returns JWT token |
+| `GET` | `/api/auth/me` | Authenticated | Retrieves current user profile |
+| `POST` | `/api/routes` | Driver | Creates a route with `date`, `endDate`, `capacity`, `space`. Enforces one-active-trip rule (HTTP 409 if active trip exists) |
+| `GET` | `/api/routes/mine` | Driver | Lists all routes created by driver |
+| `DELETE` | `/api/routes/:id` | Driver | Deletes an open route (blocked with HTTP 409 if live bookings exist; frees driver to post a new trip) |
+| `POST` | `/api/routes/:id/stops/:index/complete` | Driver | Completes intermediate stop in sequential order; sets `deliveryReached=true` on corresponding deliveries |
+| `POST` | `/api/routes/:id/complete` | Driver | Completes the entire trip, marking accepted bookings `completed`, shipments `delivered`, and rejecting pending bookings |
+| `POST` | `/api/shipments` | Business | Creates a new shipment |
+| `GET` | `/api/shipments/mine` | Business | Lists all shipments belonging to the business |
+| `DELETE` | `/api/shipments/:id` | Business | Deletes shipment (blocked with HTTP 409 if active bookings exist) |
+| `GET` | `/api/matches` | Business | Returns open routes that fit caller's open shipments, including driver contact and `endDate` |
+| `GET` | `/api/matches/summary` | Driver | Returns count of open shipments fitting driver's open route |
+| `POST` | `/api/bookings` | Business | Requests booking on matching route; snapshots load |
+| `GET` | `/api/bookings/mine` | Authenticated | Returns caller's bookings (populated with route, shipment, counterparty) |
+| `PATCH` | `/api/bookings/:id/accept` | Driver | Atomically reserves segment capacity via `Route.findOneAndUpdate` |
+| `PATCH` | `/api/bookings/:id/reject` | Driver | Rejects a pending booking request |
+| `PATCH` | `/api/bookings/:id/cancel` | Business | Cancels a pending booking request |
+| `GET` | `/api/health` | Public | Health check returning `{ status: 'ok' }` |
 
 ## Local Setup
 
