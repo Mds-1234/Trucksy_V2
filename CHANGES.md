@@ -79,7 +79,7 @@ Trucksy has been re-architected from a client-heavy React + Firebase application
 - `frontend/src/pages/Login.jsx`: Updated to use backend auth service with clear server error messages.
 - `frontend/src/pages/Signup.jsx`: Updated to submit user details to backend `/api/auth/signup` and render Zod server validation error details.
 - `frontend/src/routes/ProtectedRoute.jsx`: Enhanced with optional `role` check to restrict access by user role (`driver` or `business`).
-- `.gitignore`: Updated at repository root to ignore `node_modules`, `.env`, `dist`, `logs`, and the Windows junction link `server`.
+- `.gitignore`: Updated at repository root to ignore `node_modules`, `.env`, `dist`, and `logs`.
 
 ---
 

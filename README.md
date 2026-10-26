@@ -64,7 +64,7 @@ stateDiagram-v2
 
 ### 1. Clone & Structure Overview
 The project is structured into two primary directories:
-- `backend/`: Express server, Mongoose models, and test suite. (Also aliased via directory junction `server`).
+- `backend/`: Express server, Mongoose models, and test suite.
 - `frontend/`: React single-page client built with Vite.
 
 ### 2. Backend Setup
@@ -202,7 +202,3 @@ npm test
 Trucksy originally originated as a client-side prototype built on React, Vite, and Firebase (Google Cloud Firestore and Firebase Authentication). In that initial version, all core business logic—including route matching, capacity tracking, and status transitions—executed directly inside the user's browser. While suitable for early proof-of-concept testing, this design suffered from critical limitations: entire database collections had to be downloaded by clients, matching failed on minor city name discrepancies, concurrent bookings caused capacity races, and users could modify arbitrary records without server-side validation.
 
 The project was fully re-architected into a pure MERN application with a custom Node.js and Express backend. All logic has been migrated to server-side services with atomic concurrency controls, schema validation, and relational integrity.
-
-## Security Notice
-> [!IMPORTANT]
-> The previous Firebase client configuration contained a public Firebase Web API key (`AIzaSy...`). All references and imports to Firebase have been eradicated from this codebase. For maximum security, the owner of that Firebase project should restrict or rotate that API key within the Google Cloud Console.
