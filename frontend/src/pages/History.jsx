@@ -45,7 +45,8 @@ const History = () => {
                 </div>
                 <div className="card-body" style={{ marginTop: "10px" }}>
                   <p><strong>Route:</strong> {booking.route?.from} ➔ {booking.route?.to}</p>
-                  <p><strong>Date:</strong> {booking.route?.date || "N/A"}</p>
+                  <p><strong>Departure Date:</strong> {booking.route?.date || "N/A"}</p>
+                  <p><strong>Delivered Date:</strong> {booking.route?.endDate || booking.route?.date || "N/A"}</p>
                   {booking.route?.stops?.length > 0 && (
                     <p><strong>Stops:</strong> {booking.route.stops.join(" ➔ ")}</p>
                   )}

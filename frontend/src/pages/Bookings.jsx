@@ -70,8 +70,10 @@ const Bookings = () => {
     };
 
     load();
+    const interval = setInterval(load, 4000);
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
   }, [user, refreshCount]);
 
@@ -249,6 +251,11 @@ const Bookings = () => {
 
   const rejectedCount = useMemo(
     () => bookings.filter((b) => b.status === "rejected").length,
+    [bookings]
+  );
+
+  const businessActiveBookings = useMemo(
+    () => bookings.filter((b) => b.status === "pending" || b.status === "accepted"),
     [bookings]
   );
 
@@ -504,15 +511,15 @@ const Bookings = () => {
                 <p>No active trips found.</p>
               )}
 
-              {user?.role === "business" && bookings.map((booking) => {
+              {user?.role === "business" && businessActiveBookings.map((booking) => {
                 const isCancelling = !!inFlight[`cancel-${booking.id}`];
                 const truckLocation = getTruckLocation(booking.route, booking.shipment, booking.deliveryReached, booking.status);
-                const progressText = booking.status === "completed" || booking.deliveryReached
-                  ? "Completed"
-                  : `Remaining (destination: ${booking.shipment?.to || "N/A"})`;
+                const progressText = booking.deliveryReached
+                  ? "Delivered at Destination"
+                  : `In Transit (destination: ${booking.shipment?.to || "N/A"})`;
 
                 return (
-                  <div key={booking.id} className="card booking-card" style={{ opacity: booking.status === "completed" ? 0.7 : 1 }}>
+                  <div key={booking.id} className="card booking-card">
                     <div className="card-header" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px" }}>
                       <h4>
                         Status:{" "}
@@ -534,7 +541,7 @@ const Bookings = () => {
                       <p><strong>Shipment:</strong> {booking.shipment?.from} ➔ {booking.shipment?.to} (Weight: {booking.weight}kg, Space: {booking.space}m³)</p>
                       <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
                       <p><strong>Driver:</strong> {booking.driver?.name || "Driver"} ({booking.driver?.contact || "N/A"})</p>
-                      {(booking.status === "accepted" || booking.status === "completed") && (
+                      {booking.status === "accepted" && (
                         <>
                           <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
                           <p><strong>Truck Current Location:</strong> {truckLocation}</p>
@@ -558,7 +565,7 @@ const Bookings = () => {
                 );
               })}
 
-              {user?.role === "business" && bookings.length === 0 && availableMatches.length === 0 && (
+              {user?.role === "business" && businessActiveBookings.length === 0 && availableMatches.length === 0 && (
                 <p>No active bookings or matches found.</p>
               )}
             </div>
