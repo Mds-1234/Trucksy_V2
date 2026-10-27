@@ -11,7 +11,14 @@ const BusinessDashboard = () => {
     const fetchMatches = async () => {
       try {
         const matches = await getMatches();
-        setMatchCount(matches.length);
+        const activeMatches = (matches || []).filter(
+          (m) =>
+            m.shipment?.status === "open" &&
+            m.route?.status === "open" &&
+            m.shipment?.status !== "delivered" &&
+            m.route?.status !== "completed"
+        );
+        setMatchCount(activeMatches.length);
       } catch (err) {
         console.error("Failed to load match count", err);
       } finally {

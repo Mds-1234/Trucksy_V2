@@ -22,11 +22,13 @@ const DriverDashboard = () => {
         ]);
         if (isMounted) {
           setMatchCount(summaryRes?.count || 0);
-          const pending = (bookingsRes || []).filter((b) => b.status === "pending");
+          const pending = (bookingsRes || []).filter(
+            (b) => b.status === "pending" && b.route?.status !== "completed" && b.shipment?.status !== "delivered"
+          );
           setPendingCount(pending.length);
 
           const active = (routesRes || []).find(
-            (r) => r.status === "open" || r.status === "in_progress"
+            (r) => (r.status === "open" || r.status === "in_progress") && r.status !== "completed"
           );
           setActiveRoute(active || null);
         }

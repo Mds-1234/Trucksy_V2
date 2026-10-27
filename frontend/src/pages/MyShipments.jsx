@@ -70,8 +70,33 @@ const MyShipments = () => {
           <div className="matches-grid">
             {shipments.map((s) => (
               <div key={s.id} className="card booking-card">
-                <div className="card-header" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px" }}>
-                  <h4>Status: <span style={{ color: s.status === "delivered" ? "#4caf50" : s.status === "booked" ? "#2196f3" : "var(--primary-color)" }}>{s.status.toUpperCase()}</span></h4>
+                <div className="card-header" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h4>
+                    Status:{" "}
+                    <span
+                      className="status-badge"
+                      style={{
+                        fontSize: "0.85rem",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        fontWeight: "600",
+                        background:
+                          s.status === "delivered"
+                            ? "rgba(76, 175, 80, 0.2)"
+                            : s.status === "booked"
+                            ? "rgba(33, 150, 243, 0.2)"
+                            : "rgba(79, 70, 229, 0.2)",
+                        color:
+                          s.status === "delivered"
+                            ? "#4caf50"
+                            : s.status === "booked"
+                            ? "#2196f3"
+                            : "var(--primary-color)"
+                      }}
+                    >
+                      {s.status.toUpperCase()}
+                    </span>
+                  </h4>
                 </div>
                 <div className="card-body" style={{ marginTop: "10px" }}>
                   <p><strong>From:</strong> {s.from}</p>
@@ -80,16 +105,18 @@ const MyShipments = () => {
                   <p><strong>Weight:</strong> {s.weight} kg</p>
                   <p><strong>Space:</strong> {s.space} m³</p>
                 </div>
-                <div className="card-footer" style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                  <button
-                    className="btn"
-                    onClick={() => handleDelete(s.id)}
-                    disabled={deletingId === s.id}
-                    style={{ background: "#f44336", borderColor: "#f44336", width: "100%" }}
-                  >
-                    {deletingId === s.id ? "Deleting..." : "Delete Shipment"}
-                  </button>
-                </div>
+                {s.status === "open" && (
+                  <div className="card-footer" style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                    <button
+                      className="btn"
+                      onClick={() => handleDelete(s.id)}
+                      disabled={deletingId === s.id}
+                      style={{ background: "#f44336", borderColor: "#f44336", width: "100%" }}
+                    >
+                      {deletingId === s.id ? "Deleting..." : "Delete Shipment"}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

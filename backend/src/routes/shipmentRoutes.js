@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Shipment } from "../models/Shipment.js";
 import { Booking } from "../models/Booking.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
+import { getShipmentMineFilter } from "../utils/scope.js";
 
 const router = Router();
 
@@ -52,7 +53,8 @@ router.post("/", requireRole("business"), async (req, res, next) => {
 
 router.get("/mine", requireRole("business"), async (req, res, next) => {
   try {
-    const shipments = await Shipment.find({ business: req.user.id }).sort({ createdAt: -1 });
+    const filter = getShipmentMineFilter(req.user.id, req.query.scope);
+    const shipments = await Shipment.find(filter).sort({ createdAt: -1 });
     return res.status(200).json(shipments);
   } catch (err) {
     next(err);
@@ -77,6 +79,16 @@ router.delete("/:id", requireRole("business"), async (req, res, next) => {
         error: {
           message: "Forbidden",
           details: "You do not own this shipment"
+        }
+      });
+    }
+
+    if (shipment.status !== "open") {
+      return res.status(409).json({
+        message: "Only shipments with status open can be deleted",
+        error: {
+          message: "Only shipments with status open can be deleted",
+          details: `Shipment status is ${shipment.status}`
         }
       });
     }

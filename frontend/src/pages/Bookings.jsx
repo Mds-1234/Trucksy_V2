@@ -186,6 +186,8 @@ const Bookings = () => {
 
     try {
       await completeRouteStop(routeId, stopIndex);
+      const updatedBookings = await getUserBookings();
+      setBookings(updatedBookings || []);
       setRefreshCount((c) => c + 1);
     } catch (err) {
       const serverMsg = err.response?.data?.error?.message || "Failed to complete stop";
@@ -210,6 +212,8 @@ const Bookings = () => {
 
     try {
       await completeRoute(routeId);
+      const updatedBookings = await getUserBookings();
+      setBookings(updatedBookings || []);
       setRefreshCount((c) => c + 1);
     } catch (err) {
       const serverMsg = err.response?.data?.error?.message || "Failed to complete trip";
@@ -226,19 +230,36 @@ const Bookings = () => {
   };
 
   const pendingBookings = useMemo(
-    () => bookings.filter((b) => b.status === "pending"),
+    () =>
+      bookings.filter(
+        (b) =>
+          b.status === "pending" &&
+          b.route?.status !== "completed" &&
+          b.shipment?.status !== "delivered"
+      ),
     [bookings]
   );
 
   const acceptedBookings = useMemo(
-    () => bookings.filter((b) => b.status === "accepted" && b.route?.status !== "completed"),
+    () =>
+      bookings.filter(
+        (b) =>
+          b.status === "accepted" &&
+          b.route?.status !== "completed" &&
+          b.shipment?.status !== "delivered"
+      ),
     [bookings]
   );
 
   const groupedActiveRoutes = useMemo(() => {
     const map = {};
     bookings
-      .filter((b) => b.status === "accepted" && b.route?.status !== "completed")
+      .filter(
+        (b) =>
+          b.status === "accepted" &&
+          b.route?.status !== "completed" &&
+          b.shipment?.status !== "delivered"
+      )
       .forEach((b) => {
         const routeId = b.route?.id || b.route?._id;
         if (!routeId) return;
@@ -259,7 +280,14 @@ const Bookings = () => {
   );
 
   const businessActiveBookings = useMemo(
-    () => bookings.filter((b) => b.status === "pending" || b.status === "accepted"),
+    () =>
+      bookings.filter(
+        (b) =>
+          (b.status === "pending" || b.status === "accepted") &&
+          b.status !== "completed" &&
+          b.route?.status !== "completed" &&
+          b.shipment?.status !== "delivered"
+      ),
     [bookings]
   );
 

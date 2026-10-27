@@ -5,8 +5,9 @@ export const addShipment = async (shipmentData) => {
   return res.data;
 };
 
-export const getUserShipments = async () => {
-  const res = await api.get("/shipments/mine");
+export const getUserShipments = async (scope) => {
+  const params = scope ? { scope } : {};
+  const res = await api.get("/shipments/mine", { params });
   return res.data;
 };
 

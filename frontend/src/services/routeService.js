@@ -5,8 +5,9 @@ export const addRoute = async (routeData) => {
   return res.data;
 };
 
-export const getUserRoutes = async () => {
-  const res = await api.get("/routes/mine");
+export const getUserRoutes = async (scope) => {
+  const params = scope ? { scope } : {};
+  const res = await api.get("/routes/mine", { params });
   return res.data;
 };
 

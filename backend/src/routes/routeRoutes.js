@@ -3,6 +3,7 @@ import { Route } from "../models/Route.js";
 import { Booking } from "../models/Booking.js";
 import { Shipment } from "../models/Shipment.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
+import { getRouteMineFilter } from "../utils/scope.js";
 
 const router = Router();
 
@@ -88,7 +89,8 @@ router.post("/", requireRole("driver"), async (req, res, next) => {
 
 router.get("/mine", requireRole("driver"), async (req, res, next) => {
   try {
-    const routes = await Route.find({ driver: req.user.id }).sort({ createdAt: -1 });
+    const filter = getRouteMineFilter(req.user.id, req.query.scope);
+    const routes = await Route.find(filter).sort({ createdAt: -1 });
     return res.status(200).json(routes);
   } catch (err) {
     next(err);
@@ -113,6 +115,16 @@ router.delete("/:id", requireRole("driver"), async (req, res, next) => {
         error: {
           message: "Forbidden",
           details: "You do not own this route"
+        }
+      });
+    }
+
+    if (route.status !== "open") {
+      return res.status(409).json({
+        message: "Only routes with status open can be deleted",
+        error: {
+          message: "Only routes with status open can be deleted",
+          details: `Route status is ${route.status}`
         }
       });
     }

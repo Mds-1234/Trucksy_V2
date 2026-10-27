@@ -12,7 +12,12 @@ const History = () => {
     const fetchHistory = async () => {
       try {
         const bookingsData = await getUserBookings();
-        const completedTrips = (bookingsData || []).filter((b) => b.status === "completed");
+        const completedTrips = (bookingsData || []).filter(
+          (b) =>
+            b.status === "completed" ||
+            b.route?.status === "completed" ||
+            b.shipment?.status === "delivered"
+        );
         setHistory(completedTrips);
       } catch (err) {
         setError(err.response?.data?.error?.message || "Failed to load history");

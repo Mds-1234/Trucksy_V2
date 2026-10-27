@@ -71,7 +71,32 @@ const MyRoutes = () => {
             {routes.map((r) => (
               <div key={r.id} className="card booking-card">
                 <div className="card-header" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h4>Status: <span style={{ color: r.status === "completed" ? "#4caf50" : r.status === "in_progress" ? "#2196f3" : "var(--primary-color)" }}>{r.status.toUpperCase()}</span></h4>
+                  <h4>
+                    Status:{" "}
+                    <span
+                      className="status-badge"
+                      style={{
+                        fontSize: "0.85rem",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        fontWeight: "600",
+                        background:
+                          r.status === "completed"
+                            ? "rgba(76, 175, 80, 0.2)"
+                            : r.status === "in_progress"
+                            ? "rgba(33, 150, 243, 0.2)"
+                            : "rgba(79, 70, 229, 0.2)",
+                        color:
+                          r.status === "completed"
+                            ? "#4caf50"
+                            : r.status === "in_progress"
+                            ? "#2196f3"
+                            : "var(--primary-color)"
+                      }}
+                    >
+                      {r.status.toUpperCase()}
+                    </span>
+                  </h4>
                 </div>
                 <div className="card-body" style={{ marginTop: "10px" }}>
                   <p><strong>From:</strong> {r.from}</p>
@@ -84,16 +109,18 @@ const MyRoutes = () => {
                   <p><strong>Capacity:</strong> {r.capacity} kg</p>
                   <p><strong>Space:</strong> {r.space} m³</p>
                 </div>
-                <div className="card-footer" style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                  <button
-                    className="btn"
-                    onClick={() => handleDelete(r.id)}
-                    disabled={deletingId === r.id}
-                    style={{ background: "#f44336", borderColor: "#f44336", width: "100%" }}
-                  >
-                    {deletingId === r.id ? "Deleting..." : "Delete Route"}
-                  </button>
-                </div>
+                {r.status === "open" && (
+                  <div className="card-footer" style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                    <button
+                      className="btn"
+                      onClick={() => handleDelete(r.id)}
+                      disabled={deletingId === r.id}
+                      style={{ background: "#f44336", borderColor: "#f44336", width: "100%" }}
+                    >
+                      {deletingId === r.id ? "Deleting..." : "Delete Route"}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
