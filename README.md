@@ -26,14 +26,13 @@ Logistics and freight-capacity coordination platform engineered on the MERN stac
 
 ## Live Demo
 
-- **Frontend Application**: [FRONTEND_URL]
-- **Backend Health Check**: [BACKEND_API_URL]/api/health
-- **Demonstration Video**: [DEMO_VIDEO_LINK]
+- **Frontend Application**: https://trucksy-v2-frontend-1ag2q215j-ihogs-projects.vercel.app/
+- **Backend Health Check**: https://trucksy-v2-backend-jg3mfr5hn-ihogs-projects.vercel.app/api/health
 
 ### Demo Credentials
 These accounts were created through the standard signup page on the live deployment:
-- **Driver Account**: Email: `[DRIVER_EMAIL]`, Password: `[DRIVER_PASSWORD]`
-- **Business Account**: Email: `[BUSINESS_EMAIL]`, Password: `[BUSINESS_PASSWORD]`
+- **Driver Account**: Email: `charan@email.com`, Password: `12345678`
+- **Business Account**: Email: `sai@email.com`, Password: `12345678`
 
 ### Try the Main Workflow
 1. Log in as the driver and post a route with intermediate stops, a departure date, an arrival end date, and available payload capacity.
@@ -89,19 +88,6 @@ Trucksy connects freight supply with shipping demand through:
 
 ---
 
-## Screenshots
-
-Placeholders for application screenshots stored in `docs/screenshots/`:
-
-- **Landing Page**: `![Landing Page](docs/screenshots/landing.png)` *(Placeholder)*
-- **Driver Dashboard**: `![Driver Dashboard](docs/screenshots/driver-dashboard.png)` *(Placeholder)*
-- **Business Dashboard**: `![Business Dashboard](docs/screenshots/business-dashboard.png)` *(Placeholder)*
-- **Bookings & Route Stepper**: `![Bookings with Route Stepper](docs/screenshots/bookings-stepper.png)` *(Placeholder)*
-- **Trip History**: `![History](docs/screenshots/history.png)` *(Placeholder)*
-- **Mobile Responsive View**: `![Mobile View](docs/screenshots/mobile-view.png)` *(Placeholder)*
-
----
-
 ## Tech Stack
 
 - **Frontend**: React 19, Vite, Tailwind CSS v4, Axios, React Router v7
@@ -111,8 +97,6 @@ Placeholders for application screenshots stored in `docs/screenshots/`:
 - **Hosting / Infrastructure**: MongoDB Atlas (Database), Vercel (Frontend & Serverless deployment target)
 
 ---
-
-## Architecture
 
 ### System Flowchart
 
@@ -269,7 +253,7 @@ All protected endpoints require an `Authorization: Bearer <token>` header.
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/Mds-1234/Trucksy_V2
 cd Trucksy
 ```
 
@@ -398,7 +382,7 @@ The application is architected to deploy with MongoDB Atlas and Vercel.
 
 Trucksy began as a React + Vite + Firebase (Firestore and Firebase Authentication) prototype from a previous term, with matching logic, capacity calculations, and status transitions executing directly in the client browser. For this end-term milestone, the application was re-architected into a MERN platform with a dedicated Express API, server-side JWT authentication, server-enforced matching, atomic booking with concurrency protection, explicit lifecycle state machines, and a redesigned responsive Tailwind CSS interface.
 
-Original version: `[OLD_REPO_LINK]`
+Original version: `https://github.com/Mds-1234/Trucksy`
 
 ### Architecture Comparison
 
