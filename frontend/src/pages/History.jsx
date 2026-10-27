@@ -1,75 +1,140 @@
 import { useState, useEffect, useContext } from "react";
 import { getUserBookings } from "../services/bookingService";
 import { AuthContext } from "../context/AuthContext";
+import Card, { CardHeader, CardBody } from "../components/Card";
+import Badge from "../components/Badge";
+import Alert from "../components/Alert";
+import Spinner from "../components/Spinner";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
 
 const History = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshCount, setRefreshCount] = useState(0);
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchHistory = async () => {
       try {
         const bookingsData = await getUserBookings();
-        const completedTrips = (bookingsData || []).filter(
-          (b) =>
-            b.status === "completed" ||
-            b.route?.status === "completed" ||
-            b.shipment?.status === "delivered"
-        );
-        setHistory(completedTrips);
+        if (isMounted) {
+          const completedTrips = (bookingsData || []).filter(
+            (b) =>
+              b.status === "completed" ||
+              b.route?.status === "completed" ||
+              b.shipment?.status === "delivered"
+          );
+          setHistory(completedTrips);
+        }
       } catch (err) {
-        setError(err.response?.data?.error?.message || "Failed to load history");
+        if (isMounted) {
+          setError(err.response?.data?.error?.message || "Failed to load history");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchHistory();
-  }, [user]);
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshCount]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError("");
+    setRefreshCount((c) => c + 1);
+  };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-panel">
-        <h2>Trip History</h2>
-        <p className="auth-subtitle">Review all of your completed trips and deliveries.</p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Trip History"
+        subtitle="Review records of all your completed freight deliveries and archived journeys."
+      />
 
-        {loading ? (
-          <p>Loading history...</p>
-        ) : error ? (
-          <div className="alert alert-error">{error}</div>
-        ) : history.length === 0 ? (
-          <p>You have no completed trips yet.</p>
-        ) : (
-          <div className="matches-grid">
-            {history.map((booking) => (
-              <div key={booking.id} className="card booking-card" style={{ opacity: 0.9 }}>
-                <div className="card-header" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px" }}>
-                  <h4>Status: <span style={{ color: "#4caf50" }}>{booking.status.toUpperCase()}</span></h4>
+      {loading ? (
+        <Spinner message="Loading your completed trips..." className="py-20" />
+      ) : error ? (
+        <Alert type="error" title="Error" onRetry={handleRetry}>
+          {error}
+        </Alert>
+      ) : history.length === 0 ? (
+        <EmptyState
+          title="No completed trips yet"
+          text="When a route journey is finished and all deliveries are marked complete, they will appear here in your permanent archive."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {history.map((booking) => (
+            <Card key={booking.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex items-center justify-between gap-2 bg-slate-50/50">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Archived Delivery
+                </span>
+                <Badge status="completed" label="Completed" />
+              </CardHeader>
+              <CardBody className="space-y-4">
+                <div>
+                  <span className="text-xs text-slate-500 block mb-0.5">Route</span>
+                  <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
+                    <span>{booking.route?.from}</span>
+                    <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <span>{booking.route?.to}</span>
+                  </div>
                 </div>
-                <div className="card-body" style={{ marginTop: "10px" }}>
-                  <p><strong>Route:</strong> {booking.route?.from} ➔ {booking.route?.to}</p>
-                  <p><strong>Departure Date:</strong> {booking.route?.date || "N/A"}</p>
-                  <p><strong>Delivered Date:</strong> {booking.route?.endDate || booking.route?.date || "N/A"}</p>
-                  {booking.route?.stops?.length > 0 && (
-                    <p><strong>Stops:</strong> {booking.route.stops.join(" ➔ ")}</p>
-                  )}
-                  <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
-                  <p><strong>Shipment:</strong> {booking.shipment?.from} ➔ {booking.shipment?.to}</p>
-                  <p><strong>Weight:</strong> {booking.weight} kg, <strong>Space:</strong> {booking.space} m³</p>
-                  <hr style={{ margin: "10px 0", borderColor: "rgba(255,255,255,0.1)" }} />
-                  {user?.role === "business" ? (
-                    <p><strong>Driver:</strong> {booking.driver?.name} ({booking.driver?.contact})</p>
-                  ) : (
-                    <p><strong>Business:</strong> {booking.business?.name} ({booking.business?.contact})</p>
-                  )}
+
+                {booking.route?.stops?.length > 0 && (
+                  <div>
+                    <span className="text-xs text-slate-500 block mb-1">Passed Stops:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {booking.route.stops.map((stop, idx) => (
+                        <span key={idx} className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {stop}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 text-xs p-3 bg-slate-50 rounded-xl">
+                  <div>
+                    <span className="text-slate-500 block">Departure</span>
+                    <span className="font-semibold text-slate-800">{booking.route?.date || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Delivered On</span>
+                    <span className="font-semibold text-emerald-700">{booking.route?.endDate || booking.route?.date || "N/A"}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+                <div className="space-y-1 text-xs pt-2 border-t border-slate-100">
+                  <p className="text-slate-700">
+                    <span className="font-semibold">Shipment Cargo:</span> {booking.shipment?.from} ➔ {booking.shipment?.to}
+                  </p>
+                  <p className="text-slate-700">
+                    <span className="font-semibold">Payload:</span> {booking.weight} kg • {booking.space} m³
+                  </p>
+                  <p className="text-slate-600 pt-1">
+                    <span className="font-semibold">{user?.role === "business" ? "Driver:" : "Business:"}</span>{" "}
+                    {user?.role === "business"
+                      ? `${booking.driver?.name} (${booking.driver?.contact || "N/A"})`
+                      : `${booking.business?.name} (${booking.business?.contact || "N/A"})`}
+                  </p>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

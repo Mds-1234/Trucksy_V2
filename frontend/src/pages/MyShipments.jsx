@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { getUserShipments, deleteShipment } from "../services/shipmentService";
+import Card, { CardHeader, CardBody, CardFooter } from "../components/Card";
+import Badge from "../components/Badge";
+import Button from "../components/Button";
+import Alert from "../components/Alert";
+import Spinner from "../components/Spinner";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
 
 const MyShipments = () => {
   const [shipments, setShipments] = useState([]);
@@ -7,6 +15,7 @@ const MyShipments = () => {
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -14,7 +23,7 @@ const MyShipments = () => {
       try {
         const data = await getUserShipments();
         if (isMounted) {
-          setShipments(data);
+          setShipments(data || []);
         }
       } catch (err) {
         if (isMounted) {
@@ -31,7 +40,7 @@ const MyShipments = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshCount]);
 
   const handleDelete = async (id) => {
     setActionError("");
@@ -49,79 +58,110 @@ const MyShipments = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-panel">
-        <h2>My Shipments</h2>
-        <p className="auth-subtitle">Manage your added shipments and monitor their status.</p>
+    <div className="space-y-6">
+      <PageHeader
+        title="My Shipments"
+        subtitle="Manage your added shipments, check delivery status, and review active logistics."
+        action={
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Shipment
+          </Link>
+        }
+      />
 
-        {actionError && (
-          <div className="alert alert-error" style={{ marginBottom: "1rem" }}>
-            {actionError}
-          </div>
-        )}
+      {actionError && (
+        <Alert type="error" title="Action Failed">
+          {actionError}
+        </Alert>
+      )}
 
-        {loading ? (
-          <p>Loading shipments...</p>
-        ) : error ? (
-          <div className="alert alert-error">{error}</div>
-        ) : shipments.length === 0 ? (
-          <p>You have not created any shipments yet.</p>
-        ) : (
-          <div className="matches-grid">
-            {shipments.map((s) => (
-              <div key={s.id} className="card booking-card">
-                <div className="card-header" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h4>
-                    Status:{" "}
-                    <span
-                      className="status-badge"
-                      style={{
-                        fontSize: "0.85rem",
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontWeight: "600",
-                        background:
-                          s.status === "delivered"
-                            ? "rgba(76, 175, 80, 0.2)"
-                            : s.status === "booked"
-                            ? "rgba(33, 150, 243, 0.2)"
-                            : "rgba(79, 70, 229, 0.2)",
-                        color:
-                          s.status === "delivered"
-                            ? "#4caf50"
-                            : s.status === "booked"
-                            ? "#2196f3"
-                            : "var(--primary-color)"
-                      }}
-                    >
-                      {s.status.toUpperCase()}
-                    </span>
-                  </h4>
-                </div>
-                <div className="card-body" style={{ marginTop: "10px" }}>
-                  <p><strong>From:</strong> {s.from}</p>
-                  <p><strong>To:</strong> {s.to}</p>
-                  <p><strong>Date:</strong> {s.date || "N/A"}</p>
-                  <p><strong>Weight:</strong> {s.weight} kg</p>
-                  <p><strong>Space:</strong> {s.space} m³</p>
-                </div>
-                {s.status === "open" && (
-                  <div className="card-footer" style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                    <button
-                      className="btn"
-                      onClick={() => handleDelete(s.id)}
-                      disabled={deletingId === s.id}
-                      style={{ background: "#f44336", borderColor: "#f44336", width: "100%" }}
-                    >
-                      {deletingId === s.id ? "Deleting..." : "Delete Shipment"}
-                    </button>
+      {loading ? (
+        <Spinner message="Loading your shipments..." className="py-20" />
+      ) : error ? (
+        <Alert
+          type="error"
+          title="Error"
+          onRetry={() => {
+            setLoading(true);
+            setRefreshCount((c) => c + 1);
+          }}
+        >
+          {error}
+        </Alert>
+      ) : shipments.length === 0 ? (
+        <EmptyState
+          title="No active shipments found"
+          text="You have not created any shipments yet or your delivered shipments have moved to History."
+          action={
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+            >
+              Add a Shipment Now
+            </Link>
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {shipments.map((s) => (
+            <Card key={s.id} className="flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div>
+                <CardHeader className="flex items-center justify-between gap-2 bg-slate-50/50">
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Shipment
+                  </span>
+                  <Badge status={s.status} />
+                </CardHeader>
+                <CardBody className="space-y-4">
+                  <div className="flex items-center gap-2 text-base font-bold text-slate-900">
+                    <span>{s.from}</span>
+                    <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <span>{s.to}</span>
                   </div>
-                )}
+
+                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-xs">
+                    <div>
+                      <span className="text-slate-500 block">Date</span>
+                      <span className="font-semibold text-slate-800">{s.date || "N/A"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Weight</span>
+                      <span className="font-semibold text-slate-800">{s.weight} kg</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Space</span>
+                      <span className="font-semibold text-slate-800">{s.space} m³</span>
+                    </div>
+                  </div>
+                </CardBody>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {s.status === "open" && (
+                <CardFooter className="flex justify-end">
+                  <Button
+                    variant="outlineDanger"
+                    size="sm"
+                    loading={deletingId === s.id}
+                    disabled={deletingId === s.id}
+                    onClick={() => handleDelete(s.id)}
+                    className="w-full"
+                  >
+                    {deletingId === s.id ? "Deleting..." : "Delete Shipment"}
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
