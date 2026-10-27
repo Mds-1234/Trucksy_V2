@@ -1,87 +1,120 @@
 # Trucksy
 
-Modern, multi-tenant logistics and freight-capacity coordination platform engineered on the MERN stack (MongoDB, Express, React 19, Node.js) with Tailwind CSS v4.
+Logistics and freight-capacity coordination platform engineered on the MERN stack with Tailwind CSS v4.
 
 ---
 
 ## Table of Contents
-1. [Overview & Problem Statement](#overview--problem-statement)
-2. [Old Trucksy vs. New Trucksy: Detailed Comparison](#old-trucksy-vs-new-trucksy-detailed-comparison)
-3. [Key Architecture & Core Features](#key-architecture--core-features)
-4. [System Architecture Diagram](#system-architecture-diagram)
-5. [Booking & Lifecycle State Machine](#booking--lifecycle-state-machine)
-6. [Design System & UI Components](#design-system--ui-components)
-7. [API Reference](#api-reference)
-8. [Local Development Setup](#local-development-setup)
-9. [Environment Variables](#environment-variables)
-10. [Testing Suite](#testing-suite)
-11. [Deployment Guide](#deployment-guide)
+1. [Live Demo](#live-demo)
+2. [Problem Statement](#problem-statement)
+3. [Target Users](#target-users)
+4. [Solution](#solution)
+5. [Key Features](#key-features)
+6. [Screenshots](#screenshots)
+7. [Tech Stack](#tech-stack)
+8. [Architecture](#architecture)
+9. [Security](#security)
+10. [API Reference](#api-reference)
+11. [Local Setup](#local-setup)
+12. [Environment Variables](#environment-variables)
+13. [Testing](#testing)
+14. [Deployment](#deployment)
+15. [Project History](#project-history)
+16. [Known Limitations](#known-limitations)
 
 ---
 
-## Overview & Problem Statement
+## Live Demo
 
-Commercial freight operators regularly run routes with unused payload capacity and unutilized cubic volume across different segments of their journey. Concurrently, businesses and manufacturers struggle to secure affordable, on-demand shipping for partial loads without paying full-vehicle freight rates.
+- **Frontend Application**: [FRONTEND_URL]
+- **Backend Health Check**: [BACKEND_API_URL]/api/health
+- **Demonstration Video**: [DEMO_VIDEO_LINK]
 
-**Trucksy** solves this inefficiency by matching open cargo shipments to scheduled truck routes based on:
-- Date alignment (departure dates and estimated arrival dates)
-- Normalized spatial path topology (origin, sequential intermediate stops, and final destination)
-- Multi-segment atomic capacity checking (verifying weight and cubic volume availability along every hop)
+### Demo Credentials
+These accounts were created through the standard signup page on the live deployment:
+- **Driver Account**: Email: `[DRIVER_EMAIL]`, Password: `[DRIVER_PASSWORD]`
+- **Business Account**: Email: `[BUSINESS_EMAIL]`, Password: `[BUSINESS_PASSWORD]`
 
----
+### Try the Main Workflow
+1. Log in as the driver and post a route with intermediate stops, a departure date, an arrival end date, and available payload capacity.
+2. Log in as the business and post a shipment on the same date whose pickup and dropoff points fit within the driver's route stops.
+3. Open **Bookings** as the business and click **Book Now** on the matching route.
+4. Log in as the driver and accept the pending booking request.
+5. In the active trip view, tick the route stops in sequential order.
+6. Click **Complete Trip** once all intermediate stops are ticked.
+7. Open **History** as both the driver and the business to confirm the completed trip and delivered shipment are archived.
 
-## Old Trucksy vs. New Trucksy: Detailed Comparison
-
-| Feature / Domain | Old Trucksy (Legacy / Prototype) | New Trucksy (Current Release) |
-|---|---|---|
-| **Styling & CSS Architecture** | Legacy CSS files (`App.css`, un-scoped classes in `index.css`), scattered inline `style={{ }}` attributes, inconsistent paddings and fonts. | **Tailwind CSS v4** engine (`@tailwindcss/vite`), custom design system with `@layer base`, Inter typography, responsive utility classes, zero inline layout styles, `App.css` deleted. |
-| **Active vs. Completed Isolation** | Completed trips and delivered shipments lingered in active views ("My Routes" and "My Shipments") with active Delete buttons. | **Scope Filtering**: Active views show only active items (`open`/`in_progress` routes, `open`/`booked` shipments). Completed trips live exclusively in `/history`. |
-| **Backend Scope Endpoints** | `GET /routes/mine` and `GET /shipments/mine` returned every document unconditionally. | `GET /routes/mine` and `GET /shipments/mine` default to active-only scope; optional `?scope=all` query parameter available. |
-| **Deletion Protection** | Deletion did not check live booking dependencies, allowing accidental deletion of booked routes/shipments. | **409 Conflict Protection**: Deletion of routes or shipments is strictly prevented if live bookings exist or status is not `open`. |
-| **Dashboard Metrics** | Stats counters counted delivered shipments and completed routes, distorting live capacity numbers. | Dashboard cards, match banners, and counters filter strictly by active states, ignoring completed/delivered items. |
-| **Public Visitor Experience** | No dedicated public landing page; visitors were redirected directly to the login form. | Modern **Landing Page (`/`)** with hero headline, platform mission, 3 feature cards, and role onboarding CTAs (auto-redirects logged-in users). |
-| **Button States & Duplicate Prevention** | Relied on inconsistent spinners or raw button states susceptible to double-clicking and race conditions. | **Blocked Button Architecture**: On submit, buttons enter disabled state with `pointer-events-none` and `cursor-not-allowed`, preventing duplicate submissions without visual spinners. |
-| **Loading Indicators** | Animated SVG spinners (`Spinner.jsx`, button spinners) were scattered across pages. | **No-Spinner Architecture**: All spinners removed; data-fetching pages use clean, minimal status text (`Loading...`). |
-| **Component System** | Ad-hoc markup across individual pages with duplicated badge and button code. | **Reusable Component Suite** (`Button`, `Badge`, `Card`, `Alert`, `Input`, `Select`, `EmptyState`, `PageHeader`, `RouteStepper`). |
-| **Journey Tracking** | Basic text lists for route stops without visual truck location tracking. | **Live Route Stepper**: Visual timeline showing origin, intermediate stops, truck position indicator, and dropoff milestones. |
-| **Mobile Responsiveness** | Fixed desktop-oriented tables and navigation bars that overflowed on mobile viewports. | **Fully Responsive**: Verified at 375px, 768px, and 1280px with collapsible mobile hamburger navbar and 1-column form layouts. |
-| **Seeder & Demo Data** | Hardcoded mock database seeder (`seed.js`) with demo accounts. | Seeder script deleted; database cleaned of demo accounts for production integrity. |
-| **Code Documentation** | Mixed development comments and legacy notes throughout source files. | **Zero Comments**: Strict comment removal across all backend and frontend production source files. |
+### See the Capacity Protection
+1. Log in as a driver and post a route with `1000` kg capacity.
+2. Log in as two separate business accounts and post shipments for `700` kg and `600` kg along the same path and date.
+3. Submit booking requests from both business accounts.
+4. Log in as the driver and accept the first booking (`700` kg).
+5. Attempt to accept the second booking (`600` kg); the operation fails with HTTP `409 Conflict` because the required route segment capacity is exhausted.
 
 ---
 
-## Key Architecture & Core Features
+## Problem Statement
 
-### 1. Spatial Route & Segment Matching
-Evaluates whether a shipment's pickup and dropoff points exist in forward topological order along a driver's route path:
-`origin -> stop_1 -> stop_2 -> ... -> destination`
-Validates that:
-- `pickup_index < dropoff_index`
-- Every intermediate segment between pickup and dropoff has sufficient remaining weight capacity (`capacity >= weight`) and volume space (`space >= volume`).
-- Departure dates match, and city names are normalized (case-insensitive and trimmed).
-
-### 2. Atomic Capacity Reservation
-Booking acceptances utilize single-operation MongoDB find-and-update queries (`findOneAndUpdate` with `$inc`) to atomically decrement capacity across each hopped segment. If another concurrent booking consumes the remaining capacity first, the second operation immediately fails and transitions to `rejected`, preventing overbooking.
-
-### 3. One-Active-Trip Rule
-A driver is permitted only one active route (`open` or `in_progress`) at any given time. Attempting to create an additional route while one is active returns HTTP `409 Conflict`. A driver may post a new route only after completing or deleting the active one.
-
-### 4. Route Departure and End Dates
-Every route requires both a `date` (departure) and `endDate` (estimated arrival at final destination), with `endDate >= date`. Shippers can see the driver's estimated reach date before booking and throughout active shipment transit.
-
-### 5. Sequential Route Execution
-Drivers progress through intermediate stops in strict order. Marking a stop complete updates the truck's real-time position on the `RouteStepper` and marks deliveries destined for that stop as `delivered`.
-
-### 6. Non-Destructive Trip Archival
-Completed routes, delivered shipments, and historical bookings are never deleted from the database. When a trip completes:
-- The route status transitions to `completed`.
-- Accepted bookings transition to `completed`.
-- Shipments transition to `delivered`.
-- The items disappear from active lists (`My Routes`, `My Shipments`, `Bookings`) and appear in `History`.
+Commercial freight operators regularly run scheduled routes with unutilized payload capacity and empty cargo volume across segments of their journey. Concurrently, small and medium enterprises struggle to secure affordable, on-demand shipping for partial loads without paying full-vehicle freight rates.
 
 ---
 
-## System Architecture Diagram
+## Target Users
+
+- **Drivers**: Owner-operators and commercial freight drivers running scheduled routes with spare truck weight capacity and cubic space.
+- **Businesses**: Small and medium-sized businesses (SMBs), manufacturers, and distributors requiring partial-load or scheduled freight transport along existing driver routes.
+
+---
+
+## Solution
+
+Trucksy connects freight supply with shipping demand through:
+- **Topological Route Matching**: Server-side algorithms match shipments to routes based on departure date alignment, ordered stop paths, and available capacity across every hop.
+- **Atomic Capacity Reservations**: Single-operation database updates guarantee capacity allocation, preventing double-booking and race conditions.
+- **Trip Progress Tracking**: Sequential stop checklists for drivers and automated 20-second background polling for businesses provide synchronized shipment tracking, archiving completed journeys non-destructively in history.
+
+---
+
+## Key Features
+
+- **Role-Based Authentication**: Dedicated registration and login flows for Driver and Business roles with JSON Web Token session management.
+- **Routes with Stops and Dates**: Drivers publish journeys with departure dates, estimated arrival dates, maximum payload weight, volume space, and up to 10 ordered intermediate stops.
+- **Shipments**: Businesses publish cargo requirements specifying pickup and dropoff locations, shipment date, weight, and volume.
+- **Server-Side Matching**: Topological path inspection and multi-segment capacity calculations executed on the server.
+- **Atomic Capacity Reservation**: Atomic segment capacity decrements via MongoDB `findOneAndUpdate` with concurrency protection.
+- **Driver Stop Checklist & Business Trip Tracking**: Ordered stop check-offs by the driver and synchronized tracking by the business via 20-second periodic polling (not real-time).
+- **History Archival**: Non-destructive lifecycle transitions archiving completed trips and delivered shipments for both roles.
+- **One Active Trip Rule**: Server-enforced rule restricting drivers to a single active route (`open` or `in_progress`) at any given time.
+- **Responsive Tailwind CSS Interface**: Interface built with reusable UI components (`Button`, `Badge`, `Card`, `Alert`, `Input`, `Select`, `EmptyState`, `PageHeader`, `RouteStepper`), mobile hamburger navigation, status badges, and a visual route stepper tracking truck position.
+
+---
+
+## Screenshots
+
+Placeholders for application screenshots stored in `docs/screenshots/`:
+
+- **Landing Page**: `![Landing Page](docs/screenshots/landing.png)` *(Placeholder)*
+- **Driver Dashboard**: `![Driver Dashboard](docs/screenshots/driver-dashboard.png)` *(Placeholder)*
+- **Business Dashboard**: `![Business Dashboard](docs/screenshots/business-dashboard.png)` *(Placeholder)*
+- **Bookings & Route Stepper**: `![Bookings with Route Stepper](docs/screenshots/bookings-stepper.png)` *(Placeholder)*
+- **Trip History**: `![History](docs/screenshots/history.png)` *(Placeholder)*
+- **Mobile Responsive View**: `![Mobile View](docs/screenshots/mobile-view.png)` *(Placeholder)*
+
+---
+
+## Tech Stack
+
+- **Frontend**: React 19, Vite, Tailwind CSS v4, Axios, React Router v7
+- **Backend**: Node.js, Express 4, Mongoose 8 (MongoDB ODM)
+- **Authentication & Security**: JSON Web Tokens (`jsonwebtoken`), `bcryptjs`, `cors`, `dotenv`
+- **Testing**: Node.js native test runner (`node:test`)
+- **Hosting / Infrastructure**: MongoDB Atlas (Database), Vercel (Frontend & Serverless deployment target)
+
+---
+
+## Architecture
+
+### System Flowchart
 
 ```mermaid
 flowchart TD
@@ -98,7 +131,7 @@ flowchart TD
 
     subgraph Server["Express 4 REST Backend"]
         MW["Auth Middleware & JWT Guard"]
-        Router["Express Routers (/routes, /shipments, /bookings, /auth)"]
+        Router["Express Routers (/routes, /shipments, /bookings, /matches, /auth)"]
         Engine["Path Matching & Atomic Capacity Engine"]
     end
 
@@ -118,50 +151,72 @@ flowchart TD
     Engine -->|"CRUD & Scope Filters"| ColB
 ```
 
----
+### Backend Modules
 
-## Booking & Lifecycle State Machine
+- **`src/models/`**: Mongoose schemas defining data structures, validations, and compound indexes:
+  - `User.js`: User credentials, roles (`driver` / `business`), and password hashing methods.
+  - `Route.js`: Driver routes, normalized path keys, segment capacity tracking, and stop completion state.
+  - `Shipment.js`: Business cargo requests with normalized origin/destination keys and lifecycle states.
+  - `Booking.js`: Relational link binding routes, shipments, segment indices, snapshot loads, and statuses.
+- **`src/routes/`**: Express endpoint handlers validating inputs, applying ownership guards, and executing domain actions:
+  - `authRoutes.js`: User registration, authentication, and profile retrieval.
+  - `routeRoutes.js`: Route creation, retrieval, deletion, stop completion, and finalization.
+  - `shipmentRoutes.js`: Shipment posting, retrieval, and deletion.
+  - `matchRoutes.js`: Server-side matching queries for businesses and drivers.
+  - `bookingRoutes.js`: Booking creation, retrieval, acceptance with atomic capacity check, rejection, and cancellation.
+- **`src/middleware/`**:
+  - `auth.js`: JWT verification (`authenticate`) and role-based access checks (`requireRole`).
+  - `errorHandler.js`: Centralized error handler formatting Mongoose errors, CastErrors, and HTTP status codes.
+- **`src/utils/`**: Pure functions for core logic:
+  - `matching.js`: Forward topological path matching and available capacity verification.
+  - `capacity.js`: Generates atomic `$inc` updates and segment query filters for MongoDB operations.
+  - `scope.js`: Returns query filters separating active items from archived history.
+  - `normalise.js`: Trims, collapses whitespace, and lowercases city names for reliable matching.
+  - `token.js`: Generates and verifies JSON Web Tokens.
+
+### Booking Lifecycle State Machine
 
 ```mermaid
 stateDiagram-v2
-    [*] --> open: Route / Shipment created
-    open --> pending: Business requests booking on matching route
-    pending --> accepted: Driver accepts (Atomic segment capacity decremented)
-    pending --> rejected: Driver rejects OR capacity exhausted by another booking
-    pending --> cancelled: Business cancels pending request
-    accepted --> in_progress: Driver begins journey / ticks stops
-    in_progress --> completed: Driver ticks final stop & completes trip
-    accepted --> completed: Driver completes trip directly
-    completed --> [*]: Archived in History
-    rejected --> [*]: Closed
-    cancelled --> [*]: Closed
+    [*] --> pending: Business requests booking
+    pending --> accepted: Driver accepts (capacity reserved)
+    pending --> rejected: Driver rejects OR capacity exhausted
+    pending --> cancelled: Business cancels
+    accepted --> completed: Driver completes trip
+    completed --> [*]
+    rejected --> [*]
+    cancelled --> [*]
 ```
+
+### Route Lifecycle Statuses
+
+| Status | Description |
+|---|---|
+| `open` | Route is posted and available for bookings; departure has not started. |
+| `in_progress` | Driver has checked off at least one intermediate stop along the journey. |
+| `completed` | All intermediate stops are checked off and the trip is finalized by the driver. |
+| `cancelled` | Route was cancelled or withdrawn. |
+
+### Shipment Lifecycle Statuses
+
+| Status | Description |
+|---|---|
+| `open` | Shipment is posted and waiting to be matched with a route. |
+| `booked` | A driver accepted a booking for this shipment; capacity is reserved. |
+| `delivered` | The driver completed the trip or checked off the delivery dropoff stop. |
+| `cancelled` | Shipment was cancelled or withdrawn. |
 
 ---
 
-## Design System & UI Components
+## Security
 
-The application follows a clean, modern aesthetic:
-- **Palette**: Slate-50 background (`#f8fafc`), pure white cards (`#ffffff`), subtle borders (`#e2e8f0`), primary Indigo accents (`#4f46e5` / `#4338ca`).
-- **Typography**: Inter font family, high contrast scales, semantic HTML structure.
-- **Responsiveness**: Fluid layout from mobile phones (375px) to tablets (768px) and desktop displays (1280px+).
-
-### Component Suite (`frontend/src/components/`)
-1. **`Button`**: Supports `primary`, `secondary`, `danger`, `success`, and `outlineDanger` variants. Features automatic click blocking via `disabled:pointer-events-none` when `loading` or `disabled` is active.
-2. **`Badge`**: Pill badges categorized by state:
-   - Amber: `open`, `pending`
-   - Blue: `in_progress`, `accepted`
-   - Green: `completed`, `delivered`
-   - Red / Gray: `rejected`, `cancelled`
-   - Indigo: `driver`
-   - Purple: `business`
-3. **`Card`**: Modular composition with `Card`, `CardHeader`, `CardBody`, and `CardFooter`.
-4. **`Alert`**: Contextual message banners (`error`, `success`, `info`, `warning`) with optional `onRetry` handler.
-5. **`EmptyState`**: Friendly zero-data screens with icon, heading, descriptive copy, and call-to-action button.
-6. **`Input` & `Select`**: Form controls with automatic IDs, required field indicators, error states, helper text, and focus rings.
-7. **`PageHeader`**: Standardized page title, subtitle, and action slot.
-8. **`RouteStepper`**: Visual progress tracker showing route stops, real-time truck position, and dropoff completion badges.
-9. **`Navbar`**: Responsive top navigation with active tab pill indicators, user chip with role badge, logout action, and mobile hamburger menu.
+- **Password Hashing**: User passwords are encrypted using `bcryptjs` (10 salt rounds) before persistence and stripped from JSON output by default.
+- **Stateless JWT Authentication**: Protected endpoints require a valid JSON Web Token passed via the `Authorization: Bearer <token>` header.
+- **Role & Ownership Authorization**: Server middleware enforces role permissions (`driver` vs. `business`) and verifies document ownership before mutation or deletion.
+- **Input Validation**: Centralized field checks verify mandatory parameters and reject non-string inputs where strings are expected.
+- **ObjectId Validation**: Mongoose validates MongoDB ObjectIds, preventing application crashes from malformed identifiers.
+- **Environment Isolation**: Database connection strings, JWT secrets, and port configurations are loaded strictly from environment variables.
+- **CORS Restriction**: Cross-Origin Resource Sharing is configured to allow requests only from trusted client origins.
 
 ---
 
@@ -172,137 +227,191 @@ All protected endpoints require an `Authorization: Bearer <token>` header.
 ### Authentication Endpoints
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `POST` | `/api/auth/signup` | Public | Registers a new driver or business account |
-| `POST` | `/api/auth/login` | Public | Authenticates credentials and returns JWT token |
-| `GET` | `/api/auth/me` | Authenticated | Returns profile of currently authenticated user |
+| `POST` | `/api/auth/signup` | Public | Registers a new user account (`driver` or `business`). |
+| `POST` | `/api/auth/login` | Public | Authenticates credentials and returns a signed JWT. |
+| `GET` | `/api/auth/me` | Authenticated | Returns the profile of the authenticated user. |
 
 ### Route Endpoints
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `POST` | `/api/routes` | Driver | Creates route with `date`, `endDate`, `capacity`, `space`. Enforces one-active-trip rule (HTTP 409 if active trip exists). |
-| `GET` | `/api/routes/mine` | Driver | Lists driver's active routes by default. Use `?scope=all` to include completed routes. |
-| `DELETE` | `/api/routes/:id` | Driver | Deletes route. Blocked with HTTP 409 if not `open` or if live bookings exist. |
-| `POST` | `/api/routes/:id/stops/:index/complete` | Driver | Marks intermediate stop complete in sequential order; flags dropoffs as delivered. |
-| `POST` | `/api/routes/:id/complete` | Driver | Completes entire route, marking accepted bookings `completed` and shipments `delivered`. |
+| `POST` | `/api/routes` | Driver | Creates a route (`date`, `endDate`, `capacity`, `space`, `stops`). Enforces one-active-trip rule. |
+| `GET` | `/api/routes/mine` | Driver | Lists driver routes. Defaults to active items; supports `?scope=all`. |
+| `DELETE` | `/api/routes/:id` | Driver (Owner) | Deletes an open route. Blocked with HTTP 409 if status is not `open` or if active bookings exist. |
+| `POST` | `/api/routes/:routeId/stops/:index/complete` | Driver (Owner) | Marks an intermediate stop complete in sequential order; updates delivery milestone flags. |
+| `POST` | `/api/routes/:routeId/complete` | Driver (Owner) | Completes the entire trip, marking accepted bookings `completed` and shipments `delivered`. |
 
 ### Shipment Endpoints
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `POST` | `/api/shipments` | Business | Creates shipment with `from`, `to`, `date`, `weight`, `space`. |
-| `GET` | `/api/shipments/mine` | Business | Lists business's active shipments by default. Use `?scope=all` to include delivered shipments. |
-| `DELETE` | `/api/shipments/:id` | Business | Deletes shipment. Blocked with HTTP 409 if status is not `open` or live bookings exist. |
+| `POST` | `/api/shipments` | Business | Posts a shipment (`from`, `to`, `date`, `weight`, `space`). |
+| `GET` | `/api/shipments/mine` | Business | Lists business shipments. Defaults to active items; supports `?scope=all`. |
+| `DELETE` | `/api/shipments/:id` | Business (Owner) | Deletes an open shipment. Blocked with HTTP 409 if status is not `open` or if active bookings exist. |
 
 ### Matching & Booking Endpoints
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `GET` | `/api/matches` | Business | Finds open routes matching caller's open shipments with remaining segment capacity. |
-| `GET` | `/api/matches/summary` | Driver | Returns count of open shipments fitting driver's open route. |
-| `POST` | `/api/bookings` | Business | Requests booking on matching route; snapshots cargo load. |
-| `GET` | `/api/bookings/mine` | Authenticated | Lists caller's bookings (populated with route, shipment, and counterparty). |
-| `PATCH` | `/api/bookings/:id/accept` | Driver | Atomically reserves segment capacity via `Route.findOneAndUpdate`. |
-| `PATCH` | `/api/bookings/:id/reject` | Driver | Rejects pending booking request. |
-| `PATCH` | `/api/bookings/:id/cancel` | Business | Cancels pending booking request. |
-| `GET` | `/api/health` | Public | Health probe returning `{ status: "ok" }`. |
+| `GET` | `/api/matches` | Business | Returns open routes accommodating the caller's open shipments with sufficient capacity. |
+| `GET` | `/api/matches/summary` | Driver | Returns total count of open shipments fitting the driver's open route. |
+| `POST` | `/api/bookings` | Business (Owner) | Submits a booking request on a matching route; snapshots cargo parameters. |
+| `GET` | `/api/bookings/mine` | Authenticated | Returns bookings for the caller populated with route, shipment, driver, and business details. |
+| `PATCH` | `/api/bookings/:id/accept` | Driver (Owner) | Atomically decrements route segment capacity via `findOneAndUpdate`. Rejects with 409 if capacity is exhausted. |
+| `PATCH` | `/api/bookings/:id/reject` | Driver (Owner) | Rejects a pending booking request. |
+| `PATCH` | `/api/bookings/:id/cancel` | Business (Owner) | Cancels a pending booking request. |
+
+### Health Endpoint
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/health` | Public | Returns health status `{ status: "ok" }` (also responds at `/health`). |
 
 ---
 
-## Local Development Setup
+## Local Setup
 
-### Prerequisites
-- Node.js (v20.x or v22.x)
-- MongoDB instance (Local community server or MongoDB Atlas URI)
-
-### 1. Installation
-Clone the repository and install dependencies:
+### 1. Clone Repository
 ```bash
-# Root and frontend dependencies
-npm run build
+git clone <repository-url>
+cd Trucksy
+```
 
-# Backend dependencies
+### 2. Install Dependencies
+```bash
+# Install backend dependencies
 cd backend
 npm install
+
+# Install frontend dependencies
+cd ../frontend
+npm install
+
 cd ..
 ```
 
-### 2. Configure Backend Environment
-Create `backend/.env`:
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/trucksy
-JWT_SECRET=super_secret_jwt_key_at_least_32_characters
-JWT_EXPIRES_IN=7d
-CLIENT_URL=http://localhost:5173
+### 3. Configure Environment Files
+Copy the example environment files:
+```bash
+# In backend directory
+cp backend/.env.example backend/.env
+
+# In frontend directory
+cp frontend/.env.example frontend/.env
 ```
 
-### 3. Configure Frontend Environment
-Create `frontend/.env`:
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-### 4. Running the Development Servers
-In two separate terminals:
+### 4. Run Development Servers
+Start backend and frontend in separate terminals:
 
 ```bash
-# Terminal 1: Backend
-npm run dev:backend
-
-# Terminal 2: Frontend
-npm run dev:frontend
+# Terminal 1: Backend API
+cd backend
+npm run dev
 ```
-- Frontend client will be available at: `http://localhost:5173`
-- Backend API will listen on: `http://localhost:5000`
+
+```bash
+# Terminal 2: Frontend Client
+cd frontend
+npm run dev
+```
+
+- Frontend runs at: `http://localhost:5173`
+- Backend API runs at: `http://localhost:5000`
 
 ---
 
 ## Environment Variables
 
 ### Backend (`backend/.env`)
-| Variable | Description | Default / Example |
+| Variable | Description | Example / Placeholder |
 |---|---|---|
-| `PORT` | Server listening port | `5000` |
-| `MONGODB_URI` | MongoDB connection URI string | `mongodb://localhost:27017/trucksy` |
-| `JWT_SECRET` | Secret key used for signing JWT tokens | `your_secret_key` |
+| `PORT` | Port for Express server | `5000` |
+| `MONGODB_URI` | MongoDB connection URI string | `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/trucksy` |
+| `JWT_SECRET` | Secret key for signing JSON Web Tokens | `your_jwt_secret_key_minimum_32_chars` |
 | `JWT_EXPIRES_IN` | Token expiration duration | `7d` |
-| `CLIENT_URL` | Allowed client origin for CORS validation | `http://localhost:5173` |
+| `CLIENT_URL` | Allowed origin for CORS headers | `http://localhost:5173` |
 
 ### Frontend (`frontend/.env`)
-| Variable | Description | Default / Example |
+| Variable | Description | Example / Placeholder |
 |---|---|---|
 | `VITE_API_URL` | Base API URL prefix | `http://localhost:5000/api` |
 
 ---
 
-## Testing Suite
+## Testing
 
-All tests execute with Node's native test runner (`node:test`) without third-party test framework overhead:
+The test suite utilizes Node's native test runner (`node:test`) and asserts business logic without external testing frameworks.
 
+### Covered Logic
+- **Topological Path Matching (`src/tests/matching.test.js`)**: Validates forward path ordering, intermediate stop traversal, and rejection of reverse routes.
+- **Segment Capacity Verification (`src/tests/matching.test.js`)**: Verifies multi-segment remaining weight and space checks along traversed hops.
+- **Date Matching & City Normalization (`src/tests/matching.test.js`)**: Tests departure date alignment and case-insensitive city text comparisons.
+- **Route Constraints (`src/tests/routes.test.js`)**: Verifies required arrival dates (`endDate`) and ensures `endDate >= date`.
+- **Active Scope Filters (`src/tests/scope.test.js`)**: Validates pure functions isolating active items from completed history records.
+- **Atomic Capacity Construction (`src/tests/capacity.test.js`)**: Tests pure filter and `$inc` query construction for multi-segment capacity decrements.
+
+### Running Offline Tests
+All unit and pure function tests execute completely offline without requiring a database connection:
 ```bash
-# Run all backend tests
 npm test
 ```
 
-### Tested Capabilities
-- **Path Topology & Order**: Validates forward path ordering and rejects reverse journeys.
-- **Segment Capacity Logic**: Checks multi-segment capacity constraints along each leg.
-- **Date Matching**: Rejects routes with mismatching departure dates.
-- **Atomic Concurrency Protection**: Validates that concurrent acceptances exhaust capacity and reject subsequent requests with HTTP 409.
-- **Active Scope Filtering**: Tests pure functions (`getRouteMineFilter`, `getShipmentMineFilter`, `isRouteActive`, `isShipmentActive`, `filterActiveRoutes`, `filterActiveShipments`) ensuring completed records are isolated from active views.
+### Running Database Integration Tests
+The concurrent atomic capacity test in `backend/src/tests/capacity.test.js` tests MongoDB atomic query execution and is skipped by default. To execute it against a live test database:
+```bash
+MONGODB_URI_TEST="mongodb://localhost:27017/trucksy_test" npm test
+```
 
 ---
 
-## Deployment Guide
+## Deployment
 
-### Backend on Render
-1. Create a **New Web Service** connected to your repository.
-2. Set **Root Directory** to `backend`.
-3. Set **Build Command** to `npm install`.
-4. Set **Start Command** to `node src/index.js`.
-5. Set environment variables: `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_URL`.
+The application is architected to deploy with MongoDB Atlas and Vercel.
 
-### Frontend on Vercel
-1. Import the repository into Vercel.
-2. Set **Root Directory** to `frontend`.
-3. Framework preset: **Vite**.
-4. Set environment variable: `VITE_API_URL=https://<your-render-backend>.onrender.com/api`.
-5. The included `frontend/vercel.json` ensures client-side routing rewrites all requests to `index.html`.
+### 1. Database: MongoDB Atlas
+1. Create a MongoDB Atlas cluster.
+2. In **Network Access**, allow access from anywhere (`0.0.0.0/0`) to allow serverless connections.
+3. In **Database Access**, create a database user and obtain the connection URI string.
+
+### 2. Frontend: Vercel
+1. Create a new Vercel project pointing to the repository.
+2. Set the **Root Directory** to `frontend`.
+3. Framework Preset: **Vite**.
+4. Configure Environment Variable:
+   - `VITE_API_URL`: URL of the deployed backend API (e.g., `https://<backend-url>/api`).
+5. Client-side routing is handled by `frontend/vercel.json`, which rewrites all paths to `index.html`.
+
+### 3. Backend Deployment Configuration
+> **Note**: Serverless handler files (`backend/api/index.js` and `backend/vercel.json`) are not currently present in the repository. The backend is implemented as a standalone Node.js Express server (`node backend/src/index.js`).
+>
+> To deploy the backend to Vercel as a serverless function in the future:
+> - A serverless entrypoint (`backend/api/index.js`) and routing rewrite configuration (`backend/vercel.json`) would need to be created.
+> - A Vercel project with **Root Directory** set to `backend` would be configured with environment variables: `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_URL`, `NODE_ENV=production`.
+> - Once both projects are deployed, `CLIENT_URL` in the backend must be updated to the frontend Vercel URL and redeployed.
+> - **Vercel Deployment Protection** must be disabled in project settings so evaluators can access the application without logging into Vercel.
+
+---
+
+## Project History
+
+Trucksy began as a React + Vite + Firebase (Firestore and Firebase Authentication) prototype from a previous term, with matching logic, capacity calculations, and status transitions executing directly in the client browser. For this end-term milestone, the application was re-architected into a MERN platform with a dedicated Express API, server-side JWT authentication, server-enforced matching, atomic booking with concurrency protection, explicit lifecycle state machines, and a redesigned responsive Tailwind CSS interface.
+
+Original version: `[OLD_REPO_LINK]`
+
+### Architecture Comparison
+
+| Area | Original Version (Firebase Prototype) | Current Version (MERN Architecture) |
+|---|---|---|
+| **Where Logic Runs** | Client-side in browser (React components downloaded all database collections and computed matches) | Server-side in Node.js / Express (pure algorithms and targeted database queries) |
+| **Authentication** | Firebase Auth client SDK | Custom JSON Web Tokens (JWT) with `bcryptjs` password hashing |
+| **Data Store** | Google Cloud Firestore (schemaless client collections) | MongoDB with structured Mongoose models, compound indexing, and schema validations |
+| **Capacity Handling** | Client-side string parsing of `"A ➔ B"` route labels | Atomic server-side `$inc` updates via `findOneAndUpdate`, preventing overbooking |
+| **Authorization** | Client-side route guards without server enforcement | Server-side JWT middleware (`authenticate`), role checks (`requireRole`), and document ownership validation |
+| **Trip History** | Destructive deletion of routes and shipments from Firestore upon trip completion | Non-destructive lifecycle status progression (`completed`, `delivered`) preserved in `/history` |
+| **User Interface** | Basic custom CSS with scattered inline styles | Tailwind CSS v4 design system with reusable component set and responsive layouts |
+
+---
+
+## Known Limitations
+
+- **Polling instead of WebSockets**: Trip progress and booking updates synchronize via 20-second background polling rather than real-time WebSockets.
+- **Normalized City Text Matching**: Route stop and shipment location matching relies on normalized text strings (trimmed, lowercased) rather than geographic GPS coordinates or map-based waypoint routing.
+- **One Active Trip Rule**: Drivers can only have one active route (`open` or `in_progress`) at any given time.
+- **Serverless Cold Starts**: When deployed in serverless environments, initial requests after inactivity may experience brief cold-start latency.
+- **No Payment Processing**: Financial transactions and escrow payment gateway integrations are not implemented.
