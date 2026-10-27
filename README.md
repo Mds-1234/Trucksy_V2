@@ -325,7 +325,7 @@ npm run dev
 | `MONGODB_URI` | MongoDB connection URI string | `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/trucksy` |
 | `JWT_SECRET` | Secret key for signing JSON Web Tokens | `your_jwt_secret_key_minimum_32_chars` |
 | `JWT_EXPIRES_IN` | Token expiration duration | `7d` |
-| `CLIENT_URL` | Allowed origin for CORS headers | `http://localhost:5173` |
+| `CLIENT_URL` | Allowed origin or comma-separated list of origins for CORS headers | `https://<frontend-url>.vercel.app,http://localhost:5173` |
 
 ### Frontend (`frontend/.env`)
 | Variable | Description | Example / Placeholder |
@@ -377,14 +377,20 @@ The application is architected to deploy with MongoDB Atlas and Vercel.
    - `VITE_API_URL`: URL of the deployed backend API (e.g., `https://<backend-url>/api`).
 5. Client-side routing is handled by `frontend/vercel.json`, which rewrites all paths to `index.html`.
 
-### 3. Backend Deployment Configuration
-> **Note**: Serverless handler files (`backend/api/index.js` and `backend/vercel.json`) are not currently present in the repository. The backend is implemented as a standalone Node.js Express server (`node backend/src/index.js`).
->
-> To deploy the backend to Vercel as a serverless function in the future:
-> - A serverless entrypoint (`backend/api/index.js`) and routing rewrite configuration (`backend/vercel.json`) would need to be created.
-> - A Vercel project with **Root Directory** set to `backend` would be configured with environment variables: `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CLIENT_URL`, `NODE_ENV=production`.
-> - Once both projects are deployed, `CLIENT_URL` in the backend must be updated to the frontend Vercel URL and redeployed.
-> - **Vercel Deployment Protection** must be disabled in project settings so evaluators can access the application without logging into Vercel.
+### 3. Backend: Vercel Serverless Function
+1. Create a new Vercel project pointing to the repository.
+2. Set the **Root Directory** to `backend`. The serverless function handler is routed through `backend/api/index.js` with all requests directed to `/api` via `backend/vercel.json`.
+3. Configure Environment Variables in the Vercel project settings:
+   - `MONGODB_URI`: MongoDB Atlas connection string with `0.0.0.0/0` access allowed.
+   - `JWT_SECRET`: Secret key for JWT signing (minimum 32 characters).
+   - `JWT_EXPIRES_IN`: `7d`
+   - `CLIENT_URL`: Comma-separated list of allowed frontend origins (e.g., `https://<frontend-url>.vercel.app,http://localhost:5173`).
+   - `NODE_ENV`: `production`
+4. **Deployment Order**:
+   - Deploy the backend project first to obtain the backend URL.
+   - Deploy the frontend project with `VITE_API_URL=https://<backend-url>.vercel.app/api`.
+   - Update `CLIENT_URL` in the backend environment variables with the production frontend URL and redeploy the backend.
+5. Disable **Vercel Deployment Protection** in project settings so evaluators can access the live endpoints directly without requiring a Vercel team login.
 
 ---
 

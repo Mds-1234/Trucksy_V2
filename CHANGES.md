@@ -31,6 +31,8 @@ Trucksy has been re-architected from a client-heavy React + Firebase application
 - `backend/src/routes/shipmentRoutes.js`: Business shipment creation, retrieval, and deletion endpoints.
 - `backend/src/routes/matchRoutes.js`: Match queries for driver and business dashboards.
 - `backend/src/routes/bookingRoutes.js`: Booking request, atomic acceptance, rejection, and cancellation endpoints.
+- `backend/api/index.js`: Serverless function entrypoint for Vercel deployment exporting an async handler.
+- `backend/vercel.json`: Vercel routing configuration rewriting `/(.*)` to `/api`.
 - `backend/src/app.js`: Express application configuration with CORS, JSON parsing, and route mounting.
 - `backend/src/index.js`: Server entrypoint initiating database connection and starting HTTP listener.
 - `backend/src/tests/matching.test.js`: Built-in Node test suite verifying pure matching rules, path ordering, date matching, and edge cases.
@@ -66,10 +68,14 @@ Trucksy has been re-architected from a client-heavy React + Firebase application
 - `frontend/src/services/cleanup.js`: Legacy Firestore completed trip deletion script.
 - `frontend/src/utils/matching.js`: Legacy client-side matching algorithm that downloaded all database records into the browser.
 - `frontend/src/App.css`: Legacy stylesheet removed in favor of Tailwind CSS v4.
+- `vercel.json`: Legacy root multi-service configuration removed in favor of dedicated frontend and backend Vercel project configurations.
 
 ---
 
 ## 4. Files Modified
+- `backend/package.json`: Updated test script to directory glob pattern for Windows compatibility.
+- `backend/src/config/db.js`: Cached in-flight connection promise on `globalThis`, reused active connections (`readyState === 1`), cleared cache on error, and configured `serverSelectionTimeoutMS: 8000`.
+- `backend/src/app.js`: Updated CORS origin validation to support a comma-separated list of origins in `CLIENT_URL`.
 - `frontend/package.json`: Uninstalled `firebase` dependency; added `axios` and Tailwind CSS v4 Vite plugin; removed obsolete scripts.
 - `frontend/src/index.css`: Replaced custom CSS rules with `@import "tailwindcss";` and minimalist base typography styles.
 - `frontend/src/App.jsx`: Added landing page route (`/`) and protected role-restricted routes.
@@ -181,7 +187,7 @@ The frontend was overhauled using Tailwind CSS v4 (`@tailwindcss/vite`):
 - `MONGODB_URI`: MongoDB connection string.
 - `JWT_SECRET`: Secret key used for signing and verifying JWT tokens.
 - `JWT_EXPIRES_IN`: Token validity window (default: `7d`).
-- `CLIENT_URL`: Allowed origin for CORS headers (default: `http://localhost:5173`).
+- `CLIENT_URL`: Allowed origin or comma-separated list of origins for CORS headers (e.g. `https://<frontend-url>.vercel.app,http://localhost:5173`).
 
 ### Client (`frontend/.env`)
 - `VITE_API_URL`: Backend API base URL (e.g. `http://localhost:5000/api`).

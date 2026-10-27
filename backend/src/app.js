@@ -10,14 +10,19 @@ import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
-const allowedOrigins = [
+const configuredOrigins = env.CLIENT_URL
+  ? env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : [];
+
+const defaultOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
   "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  env.CLIENT_URL
-].filter(Boolean);
+  "http://127.0.0.1:5174"
+];
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...configuredOrigins]));
 
 app.use(
   cors({
