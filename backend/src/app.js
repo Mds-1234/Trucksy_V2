@@ -47,11 +47,11 @@ app.get(["/health", "/api/health"], (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/routes", routeRoutes);
-app.use("/api/shipments", shipmentRoutes);
-app.use("/api/matches", matchRoutes);
-app.use("/api/bookings", bookingRoutes);
+app.use(["/api/auth", "/auth"], authRoutes);
+app.use(["/api/routes", "/routes"], routeRoutes);
+app.use(["/api/shipments", "/shipments"], shipmentRoutes);
+app.use(["/api/matches", "/matches"], matchRoutes);
+app.use(["/api/bookings", "/bookings"], bookingRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
