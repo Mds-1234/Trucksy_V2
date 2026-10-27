@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { addShipment } from "../services/shipmentService";
+import Input from "./Input";
+import Button from "./Button";
+import Alert from "./Alert";
 
 const ShipmentForm = () => {
   const [form, setForm] = useState({
@@ -27,7 +30,7 @@ const ShipmentForm = () => {
         weight: Number(form.weight),
         space: Number(form.space)
       });
-      setSuccess("Shipment added successfully!");
+      setSuccess("Shipment added successfully! Matching routes will appear in Bookings.");
       setForm({ from: "", to: "", date: "", weight: "", space: "" });
     } catch (err) {
       const serverMessage = err.response?.data?.error?.message;
@@ -45,73 +48,79 @@ const ShipmentForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="auth-form" style={{ marginTop: "1rem" }}>
+    <form onSubmit={handleSubmit} className="space-y-5">
       {success && (
-        <div className="alert" style={{ backgroundColor: "rgba(76, 175, 80, 0.15)", border: "1px solid #4caf50", color: "#4caf50", marginBottom: "1rem" }}>
+        <Alert type="success" title="Success">
           {success}
-        </div>
-      )}
-      {error && (
-        <div className="alert alert-error" style={{ marginBottom: "1rem" }}>
-          {error}
-        </div>
+        </Alert>
       )}
 
-      <div className="form-group">
-        <label>Origin</label>
-        <input
-          placeholder="From (e.g. Delhi)"
+      {error && (
+        <Alert type="error" title="Error">
+          {error}
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="Pickup City (Origin)"
+          placeholder="e.g. Delhi"
           required
           value={form.from}
           onChange={(e) => setForm({ ...form, from: e.target.value })}
         />
-      </div>
 
-      <div className="form-group">
-        <label>Destination</label>
-        <input
-          placeholder="To (e.g. Jaipur)"
+        <Input
+          label="Dropoff City (Destination)"
+          placeholder="e.g. Jaipur"
           required
           value={form.to}
           onChange={(e) => setForm({ ...form, to: e.target.value })}
         />
       </div>
 
-      <div className="form-group">
-        <label>Trip Date</label>
-        <input
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Input
+          label="Desired Shipping Date"
           type="date"
           required
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
         />
-      </div>
 
-      <div className="form-group">
-        <label>Weight (kg)</label>
-        <input
-          placeholder="e.g. 2000"
+        <Input
+          label="Cargo Weight (kg)"
           type="number"
+          placeholder="e.g. 500"
+          helperText="Total weight of goods"
           required
           value={form.weight}
           onChange={(e) => setForm({ ...form, weight: e.target.value })}
         />
-      </div>
 
-      <div className="form-group">
-        <label>Space (m³)</label>
-        <input
-          placeholder="e.g. 15"
+        <Input
+          label="Required Space (m³)"
           type="number"
+          placeholder="e.g. 5"
+          helperText="Cargo volume needed"
           required
           value={form.space}
           onChange={(e) => setForm({ ...form, space: e.target.value })}
         />
       </div>
 
-      <button className="btn btn-primary" disabled={loading}>
-        {loading ? "Adding..." : "Add Shipment"}
-      </button>
+      <div className="pt-2">
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          loading={loading}
+          disabled={loading}
+          className="w-full sm:w-auto"
+        >
+          {loading ? "Adding Shipment..." : "Add Shipment"}
+        </Button>
+      </div>
     </form>
   );
 };
