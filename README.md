@@ -26,8 +26,8 @@ Logistics and freight-capacity coordination platform engineered on the MERN stac
 
 ## Live Demo
 
-- **Frontend Application**: https://trucksy-v2-frontend-1ag2q215j-ihogs-projects.vercel.app/
-- **Backend Health Check**: https://trucksy-v2-backend-jg3mfr5hn-ihogs-projects.vercel.app/api/health
+- **Frontend Application**: https://trucksy-v2-frontend-9t5bo8fxd-ihogs-projects.vercel.app/
+- **Backend Health Check**: https://trucksy-v2-backend-et9p6h0d5-ihogs-projects.vercel.app/api/health
 
 ### Demo Credentials
 These accounts were created through the standard signup page on the live deployment:
