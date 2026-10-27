@@ -5,7 +5,6 @@ import { getUserShipments } from "../services/shipmentService";
 import { Link } from "react-router-dom";
 import Card, { CardHeader, CardBody } from "../components/Card";
 import Alert from "../components/Alert";
-import Spinner from "../components/Spinner";
 import PageHeader from "../components/PageHeader";
 
 const BusinessDashboard = () => {
@@ -67,7 +66,7 @@ const BusinessDashboard = () => {
   }, [refreshCount]);
 
   if (loading) {
-    return <Spinner message="Loading business dashboard..." className="py-20" />;
+    return <div className="py-20 text-center text-sm font-medium text-slate-500">Loading business dashboard...</div>;
   }
 
   return (

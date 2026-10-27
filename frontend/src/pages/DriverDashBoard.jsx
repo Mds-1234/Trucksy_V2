@@ -6,7 +6,6 @@ import { Link } from "react-router-dom";
 import Card, { CardHeader, CardBody, CardFooter } from "../components/Card";
 import Badge from "../components/Badge";
 import Alert from "../components/Alert";
-import Spinner from "../components/Spinner";
 import PageHeader from "../components/PageHeader";
 
 const DriverDashboard = () => {
@@ -57,7 +56,7 @@ const DriverDashboard = () => {
   }, [refreshCount]);
 
   if (loading) {
-    return <Spinner message="Loading driver dashboard..." className="py-20" />;
+    return <div className="py-20 text-center text-sm font-medium text-slate-500">Loading driver dashboard...</div>;
   }
 
   return (

@@ -4,7 +4,6 @@ import { AuthContext } from "../context/AuthContext";
 import Card, { CardHeader, CardBody } from "../components/Card";
 import Badge from "../components/Badge";
 import Alert from "../components/Alert";
-import Spinner from "../components/Spinner";
 import EmptyState from "../components/EmptyState";
 import PageHeader from "../components/PageHeader";
 
@@ -60,7 +59,7 @@ const History = () => {
       />
 
       {loading ? (
-        <Spinner message="Loading your completed trips..." className="py-20" />
+        <div className="py-20 text-center text-sm font-medium text-slate-500">Loading your completed trips...</div>
       ) : error ? (
         <Alert type="error" title="Error" onRetry={handleRetry}>
           {error}

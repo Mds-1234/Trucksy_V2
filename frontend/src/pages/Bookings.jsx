@@ -13,7 +13,6 @@ import Card, { CardHeader, CardBody, CardFooter } from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import Alert from "../components/Alert";
-import Spinner from "../components/Spinner";
 import EmptyState from "../components/EmptyState";
 import PageHeader from "../components/PageHeader";
 import RouteStepper from "../components/RouteStepper";
@@ -326,7 +325,7 @@ const Bookings = () => {
       )}
 
       {loading ? (
-        <Spinner message="Loading bookings and route matches..." className="py-20" />
+        <div className="py-20 text-center text-sm font-medium text-slate-500">Loading bookings and route matches...</div>
       ) : (
         <>
           {user?.role === "driver" && (
