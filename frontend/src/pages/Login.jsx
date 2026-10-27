@@ -1,6 +1,10 @@
 import { useState, useContext, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import Card, { CardBody } from "../components/Card";
+import Input from "../components/Input";
+import Button from "../components/Button";
+import Alert from "../components/Alert";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -47,44 +51,62 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>Welcome Back</h2>
-        <p className="auth-subtitle">Log in to your Trucksy account</p>
-
-        {error && <div className="alert alert-error">{error}</div>}
-
-        <form onSubmit={handleLogin} className="auth-form">
-          <div className="form-group">
-            <label>Email Address</label>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center py-10 px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto mb-3 shadow-md">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+            </svg>
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome Back</h1>
+          <p className="mt-1 text-sm text-slate-500">Log in to manage your shipments and routes</p>
+        </div>
 
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              placeholder="••••••••"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+        <Card className="shadow-md">
+          <CardBody className="p-6 sm:p-8">
+            {error && <Alert type="error" className="mb-5">{error}</Alert>}
 
-          <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <Input
+                label="Email Address"
+                type="email"
+                placeholder="you@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
 
-        <p className="auth-switch">
-          Don't have an account? <Link to="/signup">Sign up</Link>
-        </p>
+              <Input
+                label="Password"
+                type="password"
+                placeholder="••••••••"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                loading={loading}
+                className="w-full mt-2"
+              >
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-slate-100 text-center">
+              <p className="text-sm text-slate-600">
+                Don't have an account?{" "}
+                <Link to="/signup" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                  Create an account
+                </Link>
+              </p>
+            </div>
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
